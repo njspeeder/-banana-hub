@@ -599,12 +599,12 @@ class WebTemplates:
     ADMIN = BASE.replace("BODY_CONTENT", """
 <div class="min-h-screen">
   <nav class="navbar">
-    <div class="container mx-auto px-6 py-4" style="display: flex; align-items: center; justify-content: space-between; max-width: 1200px;">
+    <div class="container mx-auto px-6 py-4" style="display: flex; align-items: center; justify-content: space-between; max-width: 1400px;">
       <div style="display: flex; align-items: center; gap: 0.75rem;">
         <span style="font-size: 1.5rem;">🍌</span>
         <h1 style="font-size: 1.25rem; font-weight: bold;">Admin Panel</h1>
       </div>
-      <a href="/" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+      <a href="/" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none;">
         <i class="fas fa-home"></i>
         <span>Home</span>
       </a>
@@ -647,11 +647,11 @@ class WebTemplates:
           <span>Key Management</span>
         </h3>
         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <button onclick="genKeys()" class="btn" style="width: 100%;">
+          <button id="genKeysBtn" class="btn" style="width: 100%;">
             <i class="fas fa-plus"></i>
             <span>Generate Keys</span>
           </button>
-          <button onclick="viewKeys()" class="btn-secondary" style="width: 100%;">
+          <button id="viewKeysBtn" class="btn-secondary" style="width: 100%;">
             <i class="fas fa-list"></i>
             <span>View All Keys</span>
           </button>
@@ -664,11 +664,11 @@ class WebTemplates:
           <span>User Management</span>
         </h3>
         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <button onclick="viewUsers()" class="btn-secondary" style="width: 100%;">
+          <button id="viewUsersBtn" class="btn-secondary" style="width: 100%;">
             <i class="fas fa-list"></i>
             <span>View All Users</span>
           </button>
-          <button onclick="lookupUser()" class="btn-secondary" style="width: 100%;">
+          <button id="lookupUserBtn" class="btn-secondary" style="width: 100%;">
             <i class="fas fa-search"></i>
             <span>Lookup User</span>
           </button>
@@ -681,11 +681,11 @@ class WebTemplates:
           <span>Security</span>
         </h3>
         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <button onclick="viewBlacklist()" class="btn-secondary" style="width: 100%;">
+          <button id="viewBlacklistBtn" class="btn-secondary" style="width: 100%;">
             <i class="fas fa-ban"></i>
             <span>View Blacklist</span>
           </button>
-          <button onclick="alert('Backup feature coming soon')" class="btn-secondary" style="width: 100%;">
+          <button id="backupDbBtn" class="btn-secondary" style="width: 100%;">
             <i class="fas fa-database"></i>
             <span>Backup Database</span>
           </button>
@@ -696,7 +696,7 @@ class WebTemplates:
     <div id="contentArea" class="card p-6" style="display: none;">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
         <h3 id="contentTitle" style="font-size: 1.25rem; font-weight: 600;">Content</h3>
-        <button onclick="closeContent()" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+        <button id="closeContentBtn" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
           <i class="fas fa-times"></i>
           <span>Close</span>
         </button>
@@ -812,6 +812,19 @@ class WebTemplates:
     html += '</tbody></table>';
     showContent('Blacklisted Users', html);
   }
+  
+  function backupDb() {
+    alert('💡 Backup feature: Use Discord command /adminpanel → Backup DB button, or implement API endpoint for browser backup.');
+  }
+  
+  // Event listeners
+  document.getElementById('genKeysBtn').addEventListener('click', genKeys);
+  document.getElementById('viewKeysBtn').addEventListener('click', viewKeys);
+  document.getElementById('viewUsersBtn').addEventListener('click', viewUsers);
+  document.getElementById('lookupUserBtn').addEventListener('click', lookupUser);
+  document.getElementById('viewBlacklistBtn').addEventListener('click', viewBlacklist);
+  document.getElementById('backupDbBtn').addEventListener('click', backupDb);
+  document.getElementById('closeContentBtn').addEventListener('click', closeContent);
 </script>
 """)
 

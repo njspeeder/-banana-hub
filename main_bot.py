@@ -182,12 +182,24 @@ class UserPanelView(discord.ui.View):
         uid = str(interaction.user.id)
         
         loader = (
-            f"-- 🍌 BANANA HUB ENTERPRISE LOADER\n"
-            f"-- Generated: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC\n"
-            f"-- User: {interaction.user.name}\n\n"
-            f'getgenv().BananaKey = "{key}"\n'
-            f'getgenv().BananaID = "{uid}"\n'
-            f'loadstring(game:HttpGet("{Config.BASE_URL}/script.lua"))()\n'
+            f'local USER_ID = "{uid}"\n'
+            f'local KEY = "{key}"\n'
+            f'local BASE_URL = "{Config.BASE_URL}"\n\n'
+            f'local function auth()\n'
+            f'    local s, r = pcall(function()\n'
+            f'        return game:HttpGet(BASE_URL .. "/api/auth?user_id=" .. USER_ID .. "&key=" .. KEY)\n'
+            f'    end)\n'
+            f'    \n'
+            f'    if s then\n'
+            f'        local d = game:GetService("HttpService"):JSONDecode(r)\n'
+            f'        if d.success and d.authenticated then\n'
+            f'            loadstring(game:HttpGet(BASE_URL .. "/main.lua?user_id=" .. USER_ID .. "&key=" .. KEY))()\n'
+            f'        else\n'
+            f'            warn("Auth failed: " .. (d.message or "Unknown"))\n'
+            f'        end\n'
+            f'    end\n'
+            f'end\n\n'
+            f'auth()'
         )
         
         try:

@@ -1242,11 +1242,11 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
         <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
             <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border);">
                 <div style="width: 48px; height: 48px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: var(--bg-dark);">
-                    {{ user.get('discord_id', 'U')[0]|upper }}
+                    {{ user.get('discord_id', 'U')[0].upper() }}
                 </div>
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-weight: 600; font-size: 0.875rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        {{ user.get('discord_id', 'User')[:12] }}
+                        User {{ user.get('discord_id', '???')[:6] }}
                     </div>
                     <div style="font-size: 0.75rem; color: var(--text-muted);">Premium User</div>
                 </div>
@@ -1255,7 +1255,6 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
         
         <!-- Navigation Menu -->
         <nav style="padding: 1.5rem 1rem;">
-            <!-- Main Section -->
             <div style="margin-bottom: 2rem;">
                 <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
                     Main Menu
@@ -1277,7 +1276,6 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                 </a>
             </div>
             
-            <!-- Account Section -->
             <div style="margin-bottom: 2rem;">
                 <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
                     Account
@@ -1294,7 +1292,6 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                 </a>
             </div>
             
-            <!-- Quick Actions -->
             <div>
                 <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
                     Quick Actions
@@ -1321,7 +1318,7 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div>
                     <h1 id="pageTitle" style="font-size: 1.75rem; margin-bottom: 0.25rem;">Dashboard Overview</h1>
-                    <p style="color: var(--text-muted); font-size: 0.875rem;">Welcome back, {{ user.get('discord_id', 'User')[:16] }}!</p>
+                    <p style="color: var(--text-muted); font-size: 0.875rem;">Welcome back, {{ user.get('discord_id', 'User') }}!</p>
                 </div>
                 
                 <div style="display: flex; align-items: center; gap: 1rem;">
@@ -1344,7 +1341,9 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                     <div class="stat-card fade-in">
                         <div class="stat-label">License Status</div>
                         <div class="stat-value" style="font-size: 1.5rem;">
-                            <span class="badge badge-success"><i class="fas fa-check"></i> Active</span>
+                            <span class="badge badge-success">
+                                <i class="fas fa-check"></i> Active
+                            </span>
                         </div>
                         <div class="stat-change positive">
                             <i class="fas fa-key"></i>
@@ -1356,9 +1355,13 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                         <div class="stat-label">HWID Status</div>
                         <div class="stat-value" style="font-size: 1.5rem;">
                             {% if user.get('hwid') %}
-                            <span class="badge badge-success"><i class="fas fa-check"></i> Set</span>
+                            <span class="badge badge-success">
+                                <i class="fas fa-check"></i> Set
+                            </span>
                             {% else %}
-                            <span class="badge badge-warning"><i class="fas fa-times"></i> Not Set</span>
+                            <span class="badge badge-warning">
+                                <i class="fas fa-times"></i> Not Set
+                            </span>
                             {% endif %}
                         </div>
                         <button onclick="resetHWID()" class="btn btn-primary btn-sm" style="margin-top: 0.5rem; font-size: 0.75rem; padding: 0.375rem 0.75rem;">
@@ -1400,7 +1403,7 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             </div>
                         </div>
                         
-                        <textarea id="loaderScript" class="code-block" style="height: 200px; resize: none; font-size: 0.75rem; margin-bottom: 1rem;" readonly>{{ loader_script }}</textarea>
+                        <textarea id="loaderScript" class="code-block" style="height: 180px; resize: none; font-size: 0.75rem; margin-bottom: 1rem;" readonly>{{ loader_script }}</textarea>
                         
                         <div style="display: flex; gap: 0.75rem;">
                             <button onclick="copyLoader()" class="btn btn-primary" style="flex: 1;">
@@ -1457,24 +1460,60 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             </div>
                             <div>
                                 <div class="card-title">License Information</div>
-                                <div class="card-subtitle">Your account details</div>
+                                <div class="card-subtitle">Your account details (click to reveal)</div>
                             </div>
                         </div>
                         
                         <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <!-- License Key with Click-to-Reveal -->
                             <div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px;">License Key</div>
-                                <div class="code-block" style="font-size: 0.875rem; padding: 0.75rem; cursor: pointer;" onclick="this.style.filter = this.style.filter ? '' : 'blur(0px)'; this.style.WebkitFilter = this.style.WebkitFilter ? '' : 'blur(0px)';" style="filter: blur(5px); -webkit-filter: blur(5px);">{{ user.get('key', 'N/A') }}</div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">License Key</div>
+                                    <button onclick="toggleBlur('licenseKey')" class="btn btn-ghost btn-sm" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                                        <i class="fas fa-eye" id="licenseKeyIcon"></i>
+                                    </button>
+                                </div>
+                                <div id="licenseKey" class="code-block blurred" onclick="toggleBlur('licenseKey')" style="font-size: 0.875rem; padding: 0.75rem; cursor: pointer; user-select: none; transition: filter 0.3s ease; word-break: break-all;" title="Click to reveal">
+                                    {{ user.get('key', 'N/A') }}
+                                </div>
+                                <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
+                                    <i class="fas fa-info-circle"></i> Click to reveal/hide • Keep this secret!
+                                </p>
                             </div>
                             
+                            <!-- Discord ID -->
                             <div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px;">Discord ID</div>
-                                <div style="font-family: monospace; color: var(--text-primary);">{{ user.get('discord_id', 'Unknown') }}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Discord ID</div>
+                                <div class="code-block" style="font-size: 0.875rem; padding: 0.75rem; word-break: break-all;">
+                                    {{ user.get('discord_id', 'Unknown') }}
+                                </div>
                             </div>
                             
+                            <!-- HWID Status -->
                             <div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px;">Last Login</div>
-                                <div style="color: var(--text-secondary);">{{ user.get('last_login', 'Never')[:19] }}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">HWID Status</div>
+                                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                                    {% if user.get('hwid') %}
+                                    <div class="code-block" style="font-size: 0.875rem; padding: 0.75rem; flex: 1; min-width: 200px; word-break: break-all;">
+                                        {{ user.get('hwid')[:20] }}...
+                                    </div>
+                                    <span class="badge badge-success">
+                                        <i class="fas fa-check"></i> Set
+                                    </span>
+                                    {% else %}
+                                    <span class="badge badge-warning" style="flex: 1;">
+                                        <i class="fas fa-times"></i> Not Set - Launch script to bind
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Last Login -->
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Last Login</div>
+                                <div style="color: var(--text-secondary); font-size: 0.875rem;">
+                                    {{ user.get('last_login', 'Never')[:19] }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1487,746 +1526,11 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             </div>
                             <div>
                                 <div class="card-title">System Status</div>
-                                <div class="card-subtitle">Service availability</div>
-                            </div>
-                        </div>
-                        
-                        <div style="display: flex; flex-direction: column; gap: 1rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <i class="fas fa-database" style="color: var(--primary);"></i>
-                                    <span>Database</span>
-                                </div>
-                                <span class="badge badge-success">Operational</span>
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <i class="fas fa-cloud" style="color: var(--primary);"></i>
-                                    <span>API Server</span>
-                                </div>
-                                <span class="badge badge-success">Online</span>
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <i class="fas fa-shield-alt" style="color: var(--primary);"></i>
-                                    <span>Security</span>
-                                </div>
-                                <span class="badge badge-success">Protected</span>
-                            </div>
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <i class="fas fa-sync" style="color: var(--primary);"></i>
-                                    <span>Auto-Updates</span>
-                                </div>
-                                <span class="badge badge-success">Enabled</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- ===== SCRIPTS PAGE ===== -->
-            <div id="page-scripts" class="page-content" style="display: none;">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-code"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div class="card-title">Script Library</div>
-                            <div class="card-subtitle">Browse and execute premium scripts</div>
-                        </div>
-                        <input type="text" class="form-input" placeholder="Search scripts..." style="max-width: 300px; padding: 0.625rem 1rem;">
-                    </div>
-                    
-                    <div class="grid grid-3" style="margin-top: 1.5rem;">
-                        <!-- Script Card 1 -->
-                        <div class="card" style="padding: 1.5rem;">
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #3B82F6, #1D4ED8); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-gamepad" style="color: white; font-size: 1.25rem;"></i>
-                                </div>
-                                <div>
-                                    <h4 style="margin-bottom: 0.25rem;">Universal ESP</h4>
-                                    <span class="badge badge-success" style="font-size: 0.625rem;">Popular</span>
-                                </div>
-                            </div>
-                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">See all players through walls with advanced ESP features.</p>
-                            <button class="btn btn-primary btn-sm" style="width: 100%;">
-                                <i class="fas fa-play"></i>
-                                <span>Execute</span>
-                            </button>
-                        </div>
-                        
-                        <!-- Script Card 2 -->
-                        <div class="card" style="padding: 1.5rem;">
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #10B981, #059669); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-running" style="color: white; font-size: 1.25rem;"></i>
-                                </div>
-                                <div>
-                                    <h4 style="margin-bottom: 0.25rem;">Speed Hack</h4>
-                                    <span class="badge badge-primary" style="font-size: 0.625rem;">Premium</span>
-                                </div>
-                            </div>
-                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">Increase your character's movement speed significantly.</p>
-                            <button class="btn btn-primary btn-sm" style="width: 100%;">
-                                <i class="fas fa-play"></i>
-                                <span>Execute</span>
-                            </button>
-                        </div>
-                        
-                        <!-- Script Card 3 -->
-                        <div class="card" style="padding: 1.5rem;">
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #F59E0B, #D97706); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-crosshairs" style="color: white; font-size: 1.25rem;"></i>
-                                </div>
-                                <div>
-                                    <h4 style="margin-bottom: 0.25rem;">Aimbot</h4>
-                                    <span class="badge badge-warning" style="font-size: 0.625rem;">New</span>
-                                </div>
-                            </div>
-                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">Auto-aim assistance with customizable settings.</p>
-                            <button class="btn btn-primary btn-sm" style="width: 100%;">
-                                <i class="fas fa-play"></i>
-                                <span>Execute</span>
-                            </button>
-                        </div>
-                        
-                        <!-- More script cards... -->
-                        <div class="card" style="padding: 1.5rem;">
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #8B5CF6, #7C3AED); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-infinity" style="color: white; font-size: 1.25rem;"></i>
-                                </div>
-                                <div>
-                                    <h4 style="margin-bottom: 0.25rem;">Infinite Jump</h4>
-                                    <span class="badge badge-success" style="font-size: 0.625rem;">Popular</span>
-                                </div>
-                            </div>
-                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">Jump infinitely without touching the ground.</p>
-                            <button class="btn btn-primary btn-sm" style="width: 100%;">
-                                <i class="fas fa-play"></i>
-                                <span>Execute</span>
-                            </button>
-                        </div>
-                        
-                        <div class="card" style="padding: 1.5rem;">
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #EC4899, #DB2777); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-ghost" style="color: white; font-size: 1.25rem;"></i>
-                                </div>
-                                <div>
-                                    <h4 style="margin-bottom: 0.25rem;">Noclip</h4>
-                                    <span class="badge badge-primary" style="font-size: 0.625rem;">Premium</span>
-                                </div>
-                            </div>
-                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">Walk through walls and solid objects.</p>
-                            <button class="btn btn-primary btn-sm" style="width: 100%;">
-                                <i class="fas fa-play"></i>
-                                <span>Execute</span>
-                            </button>
-                        </div>
-                        
-                        <div class="card" style="padding: 1.5rem;">
-                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #06B6D4, #0891B2); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-eye" style="color: white; font-size: 1.25rem;"></i>
-                                </div>
-                                <div>
-                                    <h4 style="margin-bottom: 0.25rem;">Player Tracker</h4>
-                                    <span class="badge badge-success" style="font-size: 0.625rem;">Popular</span>
-                                </div>
-                            </div>
-                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">Track player positions and movements in real-time.</p>
-                            <button class="btn btn-primary btn-sm" style="width: 100%;">
-                                <i class="fas fa-play"></i>
-                                <span>Execute</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- ===== ACTIVITY PAGE ===== -->
-            <div id="page-activity" class="page-content" style="display: none;">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-history"></i>
-                        </div>
-                        <div>
-                            <div class="card-title">Activity Log</div>
-                            <div class="card-subtitle">Your recent account activity</div>
-                        </div>
-                    </div>
-                    
-                    <div class="table-container" style="margin-top: 1.5rem;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Event</th>
-                                    <th>Description</th>
-                                    <th>IP Address</th>
-                                    <th>Timestamp</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><span class="badge badge-success"><i class="fas fa-sign-in-alt"></i> Login</span></td>
-                                    <td>Successful web login</td>
-                                    <td style="font-family: monospace; font-size: 0.875rem;">xxx.xxx.xxx.xxx</td>
-                                    <td style="color: var(--text-muted); font-size: 0.875rem;">{{ user.get('last_login', 'Unknown')[:19] }}</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="badge badge-primary"><i class="fas fa-code"></i> Script</span></td>
-                                    <td>Loader script accessed</td>
-                                    <td style="font-family: monospace; font-size: 0.875rem;">xxx.xxx.xxx.xxx</td>
-                                    <td style="color: var(--text-muted); font-size: 0.875rem;">2 hours ago</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="badge badge-warning"><i class="fas fa-desktop"></i> HWID</span></td>
-                                    <td>HWID reset performed</td>
-                                    <td style="font-family: monospace; font-size: 0.875rem;">xxx.xxx.xxx.xxx</td>
-                                    <td style="color: var(--text-muted); font-size: 0.875rem;">1 day ago</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="badge badge-success"><i class="fas fa-key"></i> Auth</span></td>
-                                    <td>License key validated</td>
-                                    <td style="font-family: monospace; font-size: 0.875rem;">xxx.xxx.xxx.xxx</td>
-                                    <td style="color: var(--text-muted); font-size: 0.875rem;">3 days ago</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- ===== PROFILE PAGE ===== -->
-            <div id="page-profile" class="page-content" style="display: none;">
-                <div class="grid grid-2">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-icon">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <div>
-                                <div class="card-title">Profile Information</div>
-                                <div class="card-subtitle">Your account details</div>
-                            </div>
-                        </div>
-                        
-                        <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem;">
-                            <div>
-                                <label class="form-label">Discord ID</label>
-                                <input type="text" class="form-input" value="{{ user.get('discord_id', 'Unknown') }}" readonly>
-                            </div>
-                            
-                            <div>
-                                <label class="form-label">License Key</label>
-                                <input type="password" class="form-input" value="{{ user.get('key', 'N/A') }}" readonly>
-                            </div>
-                            
-                            <div>
-                                <label class="form-label">Member Since</label>
-                                <input type="text" class="form-input" value="{{ user.get('joined_at', 'Unknown')[:10] }}" readonly>
-                            </div>
-                            
-                            <div>
-                                <label class="form-label">Total Logins</label>
-                                <input type="text" class="form-input" value="{{ analytics.get('total_logins', 0) }}" readonly>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-icon">
-                                <i class="fas fa-chart-bar"></i>
-                            </div>
-                            <div>
-                                <div class="card-title">Usage Statistics</div>
-                                <div class="card-subtitle">Your activity metrics</div>
-                            </div>
-                        </div>
-                        
-                        <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem;">
-                            <div class="stat-card">
-                                <div class="stat-label">Scripts Executed</div>
-                                <div class="stat-value">{{ analytics.get('total_logins', 0) * 3 }}</div>
-                                <div class="stat-change positive">
-                                    <i class="fas fa-arrow-up"></i>
-                                    <span>This month</span>
-                                </div>
-                            </div>
-                            
-                            <div class="stat-card">
-                                <div class="stat-label">Hours Played</div>
-                                <div class="stat-value">{{ analytics.get('total_logins', 0) * 2 }}</div>
-                                <div class="stat-change">
-                                    <i class="fas fa-clock"></i>
-                                    <span>Total time</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- ===== SETTINGS PAGE ===== -->
-            <div id="page-settings" class="page-content" style="display: none;">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-icon">
-                            <i class="fas fa-cog"></i>
-                        </div>
-                        <div>
-                            <div class="card-title">Account Settings</div>
-                            <div class="card-subtitle">Manage your preferences</div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 2rem;">
-                        <!-- HWID Management -->
-                        <div style="padding: 1.5rem; background: var(--bg-darker); border-radius: var(--radius-lg); margin-bottom: 1.5rem;">
-                            <h4 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;">
-                                <i class="fas fa-desktop" style="color: var(--primary);"></i>
-                                <span>HWID Management</span>
-                            </h4>
-                            <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.875rem;">
-                                Your Hardware ID is {% if user.get('hwid') %}<span class="badge badge-success">Set</span>{% else %}<span class="badge badge-warning">Not Set</span>{% endif %}
-                            </p>
-                            <button onclick="resetHWID()" class="btn btn-primary">
-                                <i class="fas fa-redo"></i>
-                                <span>Reset HWID</span>
-                            </button>
-                            <p style="color: var(--text-muted); margin-top: 0.75rem; font-size: 0.75rem;">
-                                <i class="fas fa-info-circle"></i> You can reset your HWID once every 5 minutes
-                            </p>
-                        </div>
-                        
-                        <!-- Security -->
-                        <div style="padding: 1.5rem; background: var(--bg-darker); border-radius: var(--radius-lg); margin-bottom: 1.5rem;">
-                            <h4 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;">
-                                <i class="fas fa-shield-alt" style="color: var(--primary);"></i>
-                                <span>Security</span>
-                            </h4>
-                            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <div style="font-weight: 600; margin-bottom: 0.25rem;">Two-Factor Authentication</div>
-                                        <div style="color: var(--text-muted); font-size: 0.875rem;">Add an extra layer of security</div>
-                                    </div>
-                                    <span class="badge badge-warning">Coming Soon</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Danger Zone -->
-                        <div style="padding: 1.5rem; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-lg);">
-                            <h4 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; color: var(--error);">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <span>Danger Zone</span>
-                            </h4>
-                            <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.875rem;">
-                                Permanently delete your account and all associated data
-                            </p>
-                            <button class="btn btn-secondary" style="border-color: var(--error); color: var(--error);">
-                                <i class="fas fa-trash"></i>
-                                <span>Delete Account</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-        </div>
-    </main>
-</div>
-
-<style>
-    /* Navigation Link Styles */
-    .nav-link {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.25rem;
-        color: var(--text-secondary);
-        text-decoration: none;
-        border-radius: var(--radius-md);
-        transition: all var(--transition-base);
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-    
-    .nav-link:hover {
-        background: var(--bg-card);
-        color: var(--text-primary);
-        transform: translateX(4px);
-    }
-    
-    .nav-link.active {
-        background: linear-gradient(135deg, rgba(250, 204, 21, 0.1), rgba(245, 158, 11, 0.05));
-        color: var(--primary);
-        border-left: 3px solid var(--primary);
-        padding-left: calc(1rem - 3px);
-    }
-    
-    .nav-link i {
-        width: 20px;
-        text-align: center;
-    }
-    
-    /* Page Content */
-    .page-content {
-        animation: fadeIn 0.4s ease-out;
-    }
-    
-    .page-content.active {
-        display: block;
-    }
-</style>
-
-<script>
-    // Page Navigation
-    function switchPage(event, pageName) {
-        if (event) event.preventDefault();
-        
-        // Hide all pages
-        document.querySelectorAll('.page-content').forEach(page => {
-            page.style.display = 'none';
-            page.classList.remove('active');
-        });
-        
-        // Show selected page
-        const targetPage = document.getElementById('page-' + pageName);
-        if (targetPage) {
-            targetPage.style.display = 'block';
-            targetPage.classList.add('active');
-        }
-        
-        // Update nav links
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        const activeLink = document.querySelector(`[data-page="${pageName}"]`);
-        if (activeLink) {
-            activeLink.classList.add('active');
-        }
-        
-        // Update page title
-        const titles = {
-            'overview': 'Dashboard Overview',
-            'scripts': 'Script Library',
-            'activity': 'Activity Log',
-            'profile': 'User Profile',
-            'settings': 'Account Settings'
-        };
-        document.getElementById('pageTitle').textContent = titles[pageName] || 'Dashboard';
-        
-        // Update URL without reload
-        history.pushState({page: pageName}, '', '/dashboard/' + (pageName === 'overview' ? '' : pageName));
-    }
-    
-    // Copy functions
-    async function copyKey() {
-        const keyText = '{{ user.get("key", "") }}';
-        await navigator.clipboard.writeText(keyText);
-        alert('✅ License key copied to clipboard!');
-    }
-    
-    async function copyLoader() {
-        const script = document.getElementById('loaderScript').value;
-        await navigator.clipboard.writeText(script);
-        alert('✅ Loader script copied to clipboard!');
-    }
-    
-    function downloadLoader() {
-        const script = document.getElementById('loaderScript').value;
-        const blob = new Blob([script], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'banana_loader.lua';
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-    
-    async function resetHWID() {
-        if (!confirm('Reset your HWID? You can only do this once every 5 minutes.')) return;
-        
-        try {
-            const response = await fetch('/api/user/reset-hwid', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                alert('✅ HWID reset successfully!');
-                location.reload();
-            } else {
-                alert('❌ ' + (result.error || 'Failed to reset HWID'));
-            }
-        } catch (error) {
-            alert('❌ Connection error');
-        }
-    }
-    
-    // Handle browser back/forward
-    window.addEventListener('popstate', function(event) {
-        if (event.state && event.state.page) {
-            switchPage(null, event.state.page);
-        }
-    });
-</script>
-""")
-# ==============================================================================
-# 🛡️ ADMIN PANEL - Multi-Page Layout with Advanced Management
-# ==============================================================================
-
-ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
-<!-- Admin Layout -->
-<div style="display: flex; min-height: 100vh;">
-    
-    <!-- Admin Sidebar Navigation -->
-    <aside style="width: 280px; background: var(--bg-darker); border-right: 1px solid var(--border); position: fixed; height: 100vh; overflow-y: auto; z-index: 100;">
-        <!-- Logo -->
-        <div style="padding: 2rem 1.5rem; border-bottom: 1px solid var(--border);">
-            <a href="/admin" style="display: flex; align-items: center; gap: 0.75rem; text-decoration: none;">
-                <span style="font-size: 2rem;">🍌</span>
-                <span style="font-size: 1.25rem; font-weight: 800; color: var(--primary);">Admin Panel</span>
-            </a>
-        </div>
-        
-        <!-- Admin Profile Card -->
-        <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
-            <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05)); border-radius: var(--radius-lg); border: 1px solid rgba(239, 68, 68, 0.2);">
-                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, var(--error), #DC2626); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: white;">
-                    A
-                </div>
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 600; font-size: 0.875rem; color: var(--text-primary);">
-                        Administrator
-                    </div>
-                    <div style="font-size: 0.75rem; color: var(--error);">Full Access</div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Admin Navigation Menu -->
-        <nav style="padding: 1.5rem 1rem;">
-            <!-- Dashboard Section -->
-            <div style="margin-bottom: 2rem;">
-                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                    Overview
-                </div>
-                
-                <a href="/admin" class="nav-link active" data-page="dashboard" onclick="switchAdminPage(event, 'dashboard')">
-                    <i class="fas fa-chart-pie"></i>
-                    <span>Dashboard</span>
-                </a>
-                
-                <a href="/admin/analytics" class="nav-link" data-page="analytics" onclick="switchAdminPage(event, 'analytics')">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Analytics</span>
-                </a>
-            </div>
-            
-            <!-- Management Section -->
-            <div style="margin-bottom: 2rem;">
-                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                    Management
-                </div>
-                
-                <a href="/admin/users" class="nav-link" data-page="users" onclick="switchAdminPage(event, 'users')">
-                    <i class="fas fa-users"></i>
-                    <span>Users</span>
-                </a>
-                
-                <a href="/admin/keys" class="nav-link" data-page="keys" onclick="switchAdminPage(event, 'keys')">
-                    <i class="fas fa-key"></i>
-                    <span>License Keys</span>
-                </a>
-                
-                <a href="/admin/logs" class="nav-link" data-page="logs" onclick="switchAdminPage(event, 'logs')">
-                    <i class="fas fa-clipboard-list"></i>
-                    <span>Activity Logs</span>
-                </a>
-            </div>
-            
-            <!-- System Section -->
-            <div style="margin-bottom: 2rem;">
-                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                    System
-                </div>
-                
-                <a href="/admin/settings" class="nav-link" data-page="settings" onclick="switchAdminPage(event, 'settings')">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
-                </a>
-                
-                <a href="#" onclick="createBackup(); return false;" class="nav-link">
-                    <i class="fas fa-database"></i>
-                    <span>Backup</span>
-                </a>
-            </div>
-            
-            <!-- Quick Actions -->
-            <div>
-                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                    Quick Actions
-                </div>
-                
-                <a href="/dashboard" class="nav-link">
-                    <i class="fas fa-user"></i>
-                    <span>User View</span>
-                </a>
-                
-                <a href="/logout" class="nav-link" style="color: var(--error);">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </a>
-            </div>
-        </nav>
-    </aside>
-    
-    <!-- Admin Main Content Area -->
-    <main style="margin-left: 280px; flex: 1; min-height: 100vh; background: var(--bg-dark);">
-        
-        <!-- Admin Top Bar -->
-        <header style="background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 1.5rem 2rem; position: sticky; top: 0; z-index: 50;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <h1 id="adminPageTitle" style="font-size: 1.75rem; margin-bottom: 0.25rem;">Admin Dashboard</h1>
-                    <p style="color: var(--text-muted); font-size: 0.875rem;">System overview and management</p>
-                </div>
-                
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <span class="badge badge-error">
-                        <i class="fas fa-shield-alt"></i>
-                        <span>Admin Access</span>
-                    </span>
-                    <button onclick="generateKeys()" class="btn btn-primary btn-sm">
-                        <i class="fas fa-plus"></i>
-                        <span>Generate Keys</span>
-                    </button>
-                </div>
-            </div>
-        </header>
-        
-        <!-- Admin Page Content Container -->
-        <div id="adminPageContent" style="padding: 2rem;">
-            
-            <!-- ===== DASHBOARD PAGE ===== -->
-            <div id="admin-page-dashboard" class="page-content active">
-                
-                <!-- System Stats Grid -->
-                <div class="grid grid-4" style="margin-bottom: 2rem;">
-                    <div class="stat-card fade-in">
-                        <div class="stat-label">Total Users</div>
-                        <div class="stat-value">{{ stats.get('total_users', 0) }}</div>
-                        <div class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>+{{ stats.get('total_users', 0) // 10 }} this week</span>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card fade-in" style="animation-delay: 0.1s;">
-                        <div class="stat-label">Active Keys</div>
-                        <div class="stat-value">{{ stats.get('total_keys', 0) - stats.get('available_keys', 0) }}</div>
-                        <div class="stat-change">
-                            <i class="fas fa-key"></i>
-                            <span>{{ stats.get('available_keys', 0) }} available</span>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card fade-in" style="animation-delay: 0.2s;">
-                        <div class="stat-label">Total Logins</div>
-                        <div class="stat-value">{{ stats.get('total_logins', 0) }}</div>
-                        <div class="stat-change positive">
-                            <i class="fas fa-chart-line"></i>
-                            <span>All time</span>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card fade-in" style="animation-delay: 0.3s;">
-                        <div class="stat-label">Banned Users</div>
-                        <div class="stat-value" style="color: var(--error);">{{ stats.get('total_blacklisted', 0) }}</div>
-                        <div class="stat-change negative">
-                            <i class="fas fa-ban"></i>
-                            <span>Blacklisted</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Main Dashboard Grid -->
-                <div class="grid grid-2">
-                    
-                    <!-- Quick Actions Card -->
-                    <div class="card fade-in">
-                        <div class="card-header">
-                            <div class="card-icon">
-                                <i class="fas fa-bolt"></i>
-                            </div>
-                            <div>
-                                <div class="card-title">Quick Actions</div>
-                                <div class="card-subtitle">Common administrative tasks</div>
-                            </div>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.5rem;">
-                            <button onclick="generateKeys()" class="btn btn-primary" style="justify-content: flex-start;">
-                                <i class="fas fa-key"></i>
-                                <span>Generate Keys</span>
-                            </button>
-                            
-                            <button onclick="whitelistUser()" class="btn btn-primary" style="justify-content: flex-start;">
-                                <i class="fas fa-user-plus"></i>
-                                <span>Whitelist User</span>
-                            </button>
-                            
-                            <button onclick="switchAdminPage(null, 'users')" class="btn btn-secondary" style="justify-content: flex-start;">
-                                <i class="fas fa-users"></i>
-                                <span>Manage Users</span>
-                            </button>
-                            
-                            <button onclick="switchAdminPage(null, 'keys')" class="btn btn-secondary" style="justify-content: flex-start;">
-                                <i class="fas fa-list"></i>
-                                <span>View Keys</span>
-                            </button>
-                            
-                            <button onclick="createBackup()" class="btn btn-secondary" style="justify-content: flex-start;">
-                                <i class="fas fa-database"></i>
-                                <span>Backup DB</span>
-                            </button>
-                            
-                            <button onclick="switchAdminPage(null, 'logs')" class="btn btn-secondary" style="justify-content: flex-start;">
-                                <i class="fas fa-clipboard-list"></i>
-                                <span>View Logs</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- System Status Card -->
-                    <div class="card fade-in" style="animation-delay: 0.1s;">
-                        <div class="card-header">
-                            <div class="card-icon">
-                                <i class="fas fa-server"></i>
-                            </div>
-                            <div>
-                                <div class="card-title">System Status</div>
                                 <div class="card-subtitle">Service health monitoring</div>
                             </div>
                         </div>
                         
-                        <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
                             <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md);">
                                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                                     <i class="fas fa-database" style="color: var(--primary); font-size: 1.25rem;"></i>
@@ -2261,43 +1565,807 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            <!-- ===== SCRIPTS PAGE ===== -->
+            <div id="page-scripts" class="page-content" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div class="card-title">Script Library</div>
+                            <div class="card-subtitle">Browse and execute premium scripts</div>
+                        </div>
+                        <input type="text" class="form-input" placeholder="Search scripts..." style="max-width: 300px; padding: 0.625rem 1rem;">
+                    </div>
                     
-                    <!-- Recent Users Card -->
-                    <div class="card fade-in" style="animation-delay: 0.2s;">
+                    <div class="grid grid-3" style="margin-top: 1.5rem;">
+                        <div class="card" style="padding: 1.5rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #3B82F6, #1D4ED8); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-gamepad" style="color: white; font-size: 1.25rem;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin-bottom: 0.25rem;">Universal ESP</h4>
+                                    <span class="badge badge-success" style="font-size: 0.625rem;">Popular</span>
+                                </div>
+                            </div>
+                            
+                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                                See all players through walls with advanced ESP features.
+                            </p>
+                            
+                            <button class="btn btn-primary btn-sm" style="width: 100%;">
+                                <i class="fas fa-play"></i>
+                                <span>Execute</span>
+                            </button>
+                        </div>
+                        
+                        <div class="card" style="padding: 1.5rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #10B981, #059669); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-running" style="color: white; font-size: 1.25rem;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin-bottom: 0.25rem;">Speed Hack</h4>
+                                    <span class="badge badge-primary" style="font-size: 0.625rem;">Premium</span>
+                                </div>
+                            </div>
+                            
+                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                                Increase your character's movement speed significantly.
+                            </p>
+                            
+                            <button class="btn btn-primary btn-sm" style="width: 100%;">
+                                <i class="fas fa-play"></i>
+                                <span>Execute</span>
+                            </button>
+                        </div>
+                        
+                        <div class="card" style="padding: 1.5rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #F59E0B, #D97706); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-crosshairs" style="color: white; font-size: 1.25rem;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin-bottom: 0.25rem;">Aimbot</h4>
+                                    <span class="badge badge-warning" style="font-size: 0.625rem;">New</span>
+                                </div>
+                            </div>
+                            
+                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                                Auto-aim assistance with customizable settings.
+                            </p>
+                            
+                            <button class="btn btn-primary btn-sm" style="width: 100%;">
+                                <i class="fas fa-play"></i>
+                                <span>Execute</span>
+                            </button>
+                        </div>
+                        
+                        <div class="card" style="padding: 1.5rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #8B5CF6, #7C3AED); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-infinity" style="color: white; font-size: 1.25rem;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin-bottom: 0.25rem;">Infinite Jump</h4>
+                                    <span class="badge badge-success" style="font-size: 0.625rem;">Popular</span>
+                                </div>
+                            </div>
+                            
+                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                                Jump infinitely without touching the ground.
+                            </p>
+                            
+                            <button class="btn btn-primary btn-sm" style="width: 100%;">
+                                <i class="fas fa-play"></i>
+                                <span>Execute</span>
+                            </button>
+                        </div>
+                        
+                        <div class="card" style="padding: 1.5rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #EC4899, #DB2777); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-ghost" style="color: white; font-size: 1.25rem;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin-bottom: 0.25rem;">Noclip</h4>
+                                    <span class="badge badge-primary" style="font-size: 0.625rem;">Premium</span>
+                                </div>
+                            </div>
+                            
+                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                                Walk through walls and solid objects.
+                            </p>
+                            
+                            <button class="btn btn-primary btn-sm" style="width: 100%;">
+                                <i class="fas fa-play"></i>
+                                <span>Execute</span>
+                            </button>
+                        </div>
+                        
+                        <div class="card" style="padding: 1.5rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #06B6D4, #0891B2); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-plane" style="color: white; font-size: 1.25rem;"></i>
+                                </div>
+                                <div>
+                                    <h4 style="margin-bottom: 0.25rem;">Fly Mode</h4>
+                                    <span class="badge badge-success" style="font-size: 0.625rem;">Popular</span>
+                                </div>
+                            </div>
+                            
+                            <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                                Fly around the map with full control.
+                            </p>
+                            
+                            <button class="btn btn-primary btn-sm" style="width: 100%;">
+                                <i class="fas fa-play"></i>
+                                <span>Execute</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ===== ACTIVITY PAGE ===== -->
+            <div id="page-activity" class="page-content" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <div>
+                            <div class="card-title">Activity Log</div>
+                            <div class="card-subtitle">Your recent activity and actions</div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container" style="margin-top: 1.5rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Event</th>
+                                    <th>Description</th>
+                                    <th>IP Address</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <span class="badge badge-success">
+                                            <i class="fas fa-sign-in-alt"></i> Login
+                                        </span>
+                                    </td>
+                                    <td>Successful web login</td>
+                                    <td style="font-family: monospace; font-size: 0.875rem;">xxx.xxx.xxx.xxx</td>
+                                    <td style="font-size: 0.875rem; color: var(--text-muted);">{{ user.get('last_login', 'Never')[:19] }}</td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <span class="badge badge-primary">
+                                            <i class="fas fa-code"></i> Script
+                                        </span>
+                                    </td>
+                                    <td>Loader script accessed</td>
+                                    <td style="font-family: monospace; font-size: 0.875rem;">xxx.xxx.xxx.xxx</td>
+                                    <td style="font-size: 0.875rem; color: var(--text-muted);">Recent</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ===== PROFILE PAGE ===== -->
+            <div id="page-profile" class="page-content" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <div class="card-title">User Profile</div>
+                            <div class="card-subtitle">Your account information</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 1.5rem;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Discord ID</div>
+                                <div class="code-block" style="padding: 0.75rem;">{{ user.get('discord_id', 'Unknown') }}</div>
+                            </div>
+                            
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">License Key</div>
+                                <div class="code-block" style="padding: 0.75rem; word-break: break-all;">{{ user.get('key', 'N/A') }}</div>
+                            </div>
+                            
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Member Since</div>
+                                <div style="color: var(--text-primary); font-size: 0.875rem; padding: 0.75rem; background: var(--bg-darker); border-radius: var(--radius-md);">{{ user.get('joined_at', 'Unknown')[:10] }}</div>
+                            </div>
+                            
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Total Logins</div>
+                                <div style="color: var(--text-primary); font-size: 0.875rem; padding: 0.75rem; background: var(--bg-darker); border-radius: var(--radius-md);">{{ analytics.get('total_logins', 0) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ===== SETTINGS PAGE ===== -->
+            <div id="page-settings" class="page-content" style="display: none;">
+                <div class="grid grid-2">
+                    <div class="card">
                         <div class="card-header">
                             <div class="card-icon">
-                                <i class="fas fa-user-clock"></i>
+                                <i class="fas fa-desktop"></i>
                             </div>
                             <div>
-                                <div class="card-title">Recent Users</div>
-                                <div class="card-subtitle">Latest registrations</div>
+                                <div class="card-title">Hardware ID</div>
+                                <div class="card-subtitle">Manage your HWID binding</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem;">
+                            <div style="padding: 1.5rem; background: var(--bg-darker); border-radius: var(--radius-lg); margin-bottom: 1rem;">
+                                <div style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;">Current HWID</div>
+                                {% if user.get('hwid') %}
+                                <code style="word-break: break-all; font-size: 0.75rem;">{{ user.get('hwid') }}</code>
+                                {% else %}
+                                <span style="color: var(--text-muted);">Not set - Launch the script to bind your HWID</span>
+                                {% endif %}
+                            </div>
+                            
+                            <button onclick="resetHWID()" class="btn btn-primary" style="width: 100%;">
+                                <i class="fas fa-redo"></i>
+                                <span>Reset HWID</span>
+                            </button>
+                            
+                            <div style="margin-top: 1rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-md);">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <i class="fas fa-exclamation-triangle" style="color: var(--error);"></i>
+                                    <strong style="color: var(--error); font-size: 0.875rem;">Warning</strong>
+                                </div>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">
+                                    Resetting your HWID will unbind your license from the current device. You can only do this once every 5 minutes.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div>
+                                <div class="card-title">Security</div>
+                                <div class="card-subtitle">Account security settings</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md); margin-bottom: 1rem;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem;">Account Status</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Your account is active and secure</div>
+                                </div>
+                                <span class="badge badge-success">
+                                    <i class="fas fa-check"></i> Active
+                                </span>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md); margin-bottom: 1rem;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem;">HWID Protection</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Prevents unauthorized access</div>
+                                </div>
+                                <span class="badge badge-success">
+                                    <i class="fas fa-lock"></i> Enabled
+                                </span>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md);">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem;">Last Login</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ user.get('last_login', 'Never')[:19] }}</div>
+                                </div>
+                                <i class="fas fa-clock" style="color: var(--primary); font-size: 1.25rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+</div>
+
+<script>
+function switchPage(event, pageName) {
+    if (event) event.preventDefault();
+    
+    document.querySelectorAll('.page-content').forEach(page => {
+        page.style.display = 'none';
+        page.classList.remove('active');
+    });
+    
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    const targetPage = document.getElementById('page-' + pageName);
+    if (targetPage) {
+        targetPage.style.display = 'block';
+        targetPage.classList.add('active');
+    }
+    
+    const targetLink = document.querySelector(`.nav-link[data-page="${pageName}"]`);
+    if (targetLink) {
+        targetLink.classList.add('active');
+    }
+    
+    const titles = {
+        'overview': 'Dashboard Overview',
+        'scripts': 'Script Library',
+        'activity': 'Activity Log',
+        'profile': 'User Profile',
+        'settings': 'Account Settings'
+    };
+    
+    document.getElementById('pageTitle').textContent = titles[pageName] || 'Dashboard';
+    
+    if (window.history && window.history.pushState) {
+        window.history.pushState({page: pageName}, '', `/dashboard/${pageName === 'overview' ? '' : pageName}`);
+    }
+}
+
+function toggleBlur(elementId) {
+    const element = document.getElementById(elementId);
+    const icon = document.getElementById(elementId + 'Icon');
+    
+    if (element.classList.contains('blurred')) {
+        element.classList.remove('blurred');
+        element.style.filter = 'none';
+        element.style.userSelect = 'text';
+        if (icon) icon.className = 'fas fa-eye-slash';
+        
+        setTimeout(() => {
+            if (!element.classList.contains('blurred')) {
+                toggleBlur(elementId);
+            }
+        }, 30000);
+    } else {
+        element.classList.add('blurred');
+        element.style.filter = 'blur(8px)';
+        element.style.userSelect = 'none';
+        if (icon) icon.className = 'fas fa-eye';
+    }
+}
+
+function copyLoader() {
+    const loaderText = document.getElementById('loaderScript');
+    loaderText.select();
+    document.execCommand('copy');
+    
+    showNotification('Loader script copied to clipboard!', 'success');
+}
+
+function downloadLoader() {
+    const loaderText = document.getElementById('loaderScript').value;
+    const blob = new Blob([loaderText], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'banana_hub_loader.lua';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    showNotification('Loader script downloaded!', 'success');
+}
+
+function copyKey() {
+    const keyElement = document.getElementById('licenseKey');
+    const keyText = keyElement.textContent.trim();
+    
+    navigator.clipboard.writeText(keyText).then(() => {
+        showNotification('License key copied to clipboard!', 'success');
+    }).catch(() => {
+        showNotification('Failed to copy key', 'error');
+    });
+}
+
+async function resetHWID() {
+    if (!confirm('Reset your HWID? You can only do this once every 5 minutes.')) return;
+    
+    try {
+        const response = await fetch('/api/user/reset-hwid', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('HWID reset successfully!', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showNotification(data.error || 'Failed to reset HWID', 'error');
+        }
+    } catch (error) {
+        console.error('HWID reset error:', error);
+        showNotification('Connection error. Please try again.', 'error');
+    }
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 2rem;
+        right: 2rem;
+        padding: 1rem 1.5rem;
+        background: ${type === 'success' ? 'var(--success)' : 'var(--error)'};
+        color: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideInRight 0.3s ease reverse';
+        setTimeout(() => document.body.removeChild(notification), 300);
+    }, 3000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const path = window.location.pathname;
+    const page = path.split('/').pop() || 'overview';
+    
+    if (page && page !== 'dashboard') {
+        switchPage(null, page);
+    }
+});
+</script>
+
+<style>
+.blurred {
+    filter: blur(8px);
+    transition: filter 0.3s ease;
+    user-select: none;
+}
+
+.blurred:hover {
+    filter: blur(6px);
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.nav-link:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+.nav-link.active {
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.1), rgba(245, 158, 11, 0.05));
+    color: var(--primary);
+    border-left: 3px solid var(--primary);
+}
+
+.nav-link i {
+    width: 1.25rem;
+    text-align: center;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    aside {
+        display: none;
+    }
+    
+    main {
+        margin-left: 0 !important;
+    }
+    
+    .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+""")
+
+# ==============================================================================
+# 🛡️ ADMIN PANEL - Multi-Page Layout with Advanced Management
+# ==============================================================================
+
+ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
+<!-- Admin Dashboard Layout -->
+<div style="display: flex; min-height: 100vh;">
+    
+    <!-- Admin Sidebar Navigation -->
+    <aside style="width: 280px; background: var(--bg-darker); border-right: 1px solid var(--border); position: fixed; height: 100vh; overflow-y: auto; z-index: 100;">
+        <!-- Admin Logo -->
+        <div style="padding: 2rem 1.5rem; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, rgba(250, 204, 21, 0.05), rgba(245, 158, 11, 0.02));">
+            <a href="/admin" style="display: flex; align-items: center; gap: 0.75rem; text-decoration: none;">
+                <span style="font-size: 2rem;">👑</span>
+                <div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary);">Admin Panel</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Banana Hub</div>
+                </div>
+            </a>
+        </div>
+        
+        <!-- Admin Navigation Menu -->
+        <nav style="padding: 1.5rem 1rem;">
+            <div style="margin-bottom: 2rem;">
+                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
+                    Overview
+                </div>
+                
+                <a href="/admin" class="nav-link active" data-page="dashboard" onclick="switchAdminPage(event, 'dashboard')">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                
+                <a href="/admin/analytics" class="nav-link" data-page="analytics" onclick="switchAdminPage(event, 'analytics')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </a>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
+                    Management
+                </div>
+                
+                <a href="/admin/users" class="nav-link" data-page="users" onclick="switchAdminPage(event, 'users')">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a>
+                
+                <a href="/admin/keys" class="nav-link" data-page="keys" onclick="switchAdminPage(event, 'keys')">
+                    <i class="fas fa-key"></i>
+                    <span>License Keys</span>
+                </a>
+                
+                <a href="/admin/logs" class="nav-link" data-page="logs" onclick="switchAdminPage(event, 'logs')">
+                    <i class="fas fa-list"></i>
+                    <span>Activity Logs</span>
+                </a>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
+                    System
+                </div>
+                
+                <a href="/admin/settings" class="nav-link" data-page="settings" onclick="switchAdminPage(event, 'settings')">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+            
+            <div>
+                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
+                    Quick Actions
+                </div>
+                
+                <a href="/dashboard" class="nav-link">
+                    <i class="fas fa-user"></i>
+                    <span>User Panel</span>
+                </a>
+                
+                <a href="/logout" class="nav-link" style="color: var(--error);">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+    
+    <!-- Main Admin Content Area -->
+    <main style="margin-left: 280px; flex: 1; min-height: 100vh; background: var(--bg-dark);">
+        
+        <!-- Admin Top Bar -->
+        <header style="background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 1.5rem 2rem; position: sticky; top: 0; z-index: 50;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h1 id="adminPageTitle" style="font-size: 1.75rem; margin-bottom: 0.25rem;">Admin Dashboard</h1>
+                    <p style="color: var(--text-muted); font-size: 0.875rem;">System management and monitoring</p>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span class="badge badge-error" style="background: linear-gradient(135deg, var(--primary), var(--accent)); color: var(--bg-dark);">
+                        <i class="fas fa-crown"></i>
+                        <span>Administrator</span>
+                    </span>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Admin Page Content Container -->
+        <div id="adminPageContent" style="padding: 2rem;">
+            
+            <!-- ===== ADMIN DASHBOARD PAGE ===== -->
+            <div id="admin-page-dashboard" class="page-content active">
+                
+                <!-- Admin Stats Grid -->
+                <div class="grid grid-4" style="margin-bottom: 2rem;">
+                    <div class="stat-card fade-in">
+                        <div class="stat-label">Total Users</div>
+                        <div class="stat-value">{{ stats.get('total_users', 0) }}</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-users"></i>
+                            <span>Registered accounts</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fade-in" style="animation-delay: 0.1s;">
+                        <div class="stat-label">Available Keys</div>
+                        <div class="stat-value">{{ stats.get('available_keys', 0) }}</div>
+                        <div class="stat-change">
+                            <i class="fas fa-key"></i>
+                            <span>Unused licenses</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fade-in" style="animation-delay: 0.2s;">
+                        <div class="stat-label">Total Logins</div>
+                        <div class="stat-value">{{ stats.get('total_logins', 0) }}</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>All time</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card fade-in" style="animation-delay: 0.3s;">
+                        <div class="stat-label">Blacklisted</div>
+                        <div class="stat-value" style="color: var(--error);">{{ stats.get('total_blacklisted', 0) }}</div>
+                        <div class="stat-change negative">
+                            <i class="fas fa-ban"></i>
+                            <span>Banned users</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Admin Actions Grid -->
+                <div class="grid grid-2">
+                    
+                    <!-- Quick Actions Card -->
+                    <div class="card fade-in">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <div>
+                                <div class="card-title">Quick Actions</div>
+                                <div class="card-subtitle">Common administrative tasks</div>
                             </div>
                         </div>
                         
                         <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem;">
-                            {% for user in users[:5] %}
-                            <div style="display: flex; align-items: center; gap: 1rem; padding: 0.75rem; background: var(--bg-darker); border-radius: var(--radius-md);">
-                                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--bg-dark);">
-                                    {{ user.get('discord_id', 'U')[0]|upper }}
-                                </div>
-                                <div style="flex: 1; min-width: 0;">
-                                    <div style="font-weight: 600; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                        {{ user.get('discord_id', 'Unknown')[:20] }}
-                                    </div>
-                                    <div style="font-size: 0.75rem; color: var(--text-muted);">
-                                        {{ user.get('joined_at', 'Unknown')[:10] }}
-                                    </div>
-                                </div>
-                                <button onclick="manageUser('{{ user.get('discord_id', '') }}')" class="btn btn-ghost btn-icon btn-sm">
-                                    <i class="fas fa-cog"></i>
-                                </button>
+                            <button onclick="showGenerateKeyModal()" class="btn btn-primary" style="justify-content: flex-start;">
+                                <i class="fas fa-key"></i>
+                                <span>Generate License Keys</span>
+                            </button>
+                            
+                            <button onclick="showWhitelistModal()" class="btn btn-secondary" style="justify-content: flex-start;">
+                                <i class="fas fa-user-plus"></i>
+                                <span>Whitelist User</span>
+                            </button>
+                            
+                            <button onclick="createBackup()" class="btn btn-secondary" style="justify-content: flex-start;">
+                                <i class="fas fa-database"></i>
+                                <span>Backup Database</span>
+                            </button>
+                            
+                            <button onclick="switchAdminPage(event, 'users')" class="btn btn-secondary" style="justify-content: flex-start;">
+                                <i class="fas fa-users"></i>
+                                <span>Manage Users</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- System Status Card -->
+                    <div class="card fade-in" style="animation-delay: 0.1s;">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-server"></i>
                             </div>
-                            {% endfor %}
+                            <div>
+                                <div class="card-title">System Status</div>
+                                <div class="card-subtitle">Real-time service health</div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md);">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <i class="fas fa-database" style="color: var(--primary); font-size: 1.25rem;"></i>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 0.875rem;">Database</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">SQLite Active</div>
+                                    </div>
+                                </div>
+                                <span class="badge badge-success">Operational</span>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md);">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <i class="fas fa-cloud" style="color: var(--primary); font-size: 1.25rem;"></i>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 0.875rem;">API Server</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">Flask + REST API</div>
+                                    </div>
+                                </div>
+                                <span class="badge badge-success">Running</span>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md);">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <i class="fas fa-robot" style="color: var(--primary); font-size: 1.25rem;"></i>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 0.875rem;">Discord Bot</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">Command Handler</div>
+                                    </div>
+                                </div>
+                                <span class="badge badge-success">Online</span>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md);">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <i class="fas fa-shield-alt" style="color: var(--primary); font-size: 1.25rem;"></i>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 0.875rem;">Security</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">HWID Protection</div>
+                                    </div>
+                                </div>
+                                <span class="badge badge-success">Active</span>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Recent Activity Card -->
-                    <div class="card fade-in" style="animation-delay: 0.3s;">
+                    <div class="card fade-in" style="animation-delay: 0.2s; grid-column: span 2;">
                         <div class="card-header">
                             <div class="card-icon">
                                 <i class="fas fa-history"></i>
@@ -2308,30 +2376,39 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             </div>
                         </div>
                         
-                        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem;">
-                            <div style="padding: 0.75rem; background: var(--bg-darker); border-radius: var(--radius-md); border-left: 3px solid var(--success);">
-                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                                    <span class="badge badge-success" style="font-size: 0.625rem;"><i class="fas fa-sign-in-alt"></i> Login</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">2 minutes ago</span>
-                                </div>
-                                <div style="font-size: 0.875rem;">User logged in via web panel</div>
-                            </div>
-                            
-                            <div style="padding: 0.75rem; background: var(--bg-darker); border-radius: var(--radius-md); border-left: 3px solid var(--primary);">
-                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                                    <span class="badge badge-primary" style="font-size: 0.625rem;"><i class="fas fa-key"></i> Key</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">15 minutes ago</span>
-                                </div>
-                                <div style="font-size: 0.875rem;">New license key generated</div>
-                            </div>
-                            
-                            <div style="padding: 0.75rem; background: var(--bg-darker); border-radius: var(--radius-md); border-left: 3px solid var(--warning);">
-                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                                    <span class="badge badge-warning" style="font-size: 0.625rem;"><i class="fas fa-desktop"></i> HWID</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">1 hour ago</span>
-                                </div>
-                                <div style="font-size: 0.875rem;">HWID reset requested</div>
-                            </div>
+                        <div class="table-container" style="margin-top: 1.5rem;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Event</th>
+                                        <th>User</th>
+                                        <th>Details</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-user-plus"></i> Whitelist
+                                            </span>
+                                        </td>
+                                        <td style="font-family: monospace;">User ******</td>
+                                        <td style="font-size: 0.875rem;">New user whitelisted</td>
+                                        <td style="font-size: 0.875rem; color: var(--text-muted);">Recent</td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span class="badge badge-primary">
+                                                <i class="fas fa-key"></i> Key Gen
+                                            </span>
+                                        </td>
+                                        <td style="font-family: monospace;">Admin</td>
+                                        <td style="font-size: 0.875rem;">Generated 5 license keys</td>
+                                        <td style="font-size: 0.875rem; color: var(--text-muted);">Recent</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -2346,42 +2423,42 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                         </div>
                         <div>
                             <div class="card-title">System Analytics</div>
-                            <div class="card-subtitle">Performance and usage metrics</div>
+                            <div class="card-subtitle">Performance metrics and statistics</div>
                         </div>
                     </div>
                     
                     <div class="grid grid-3" style="margin-top: 2rem;">
                         <div class="stat-card">
-                            <div class="stat-label">Total Revenue</div>
-                            <div class="stat-value" style="font-size: 2rem;">$0</div>
+                            <div class="stat-label">Active Users</div>
+                            <div class="stat-value">{{ stats.get('active_users', 0) }}</div>
+                            <div class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>Non-banned users</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-label">Total Keys Generated</div>
+                            <div class="stat-value">{{ stats.get('total_keys', 0) }}</div>
                             <div class="stat-change">
-                                <i class="fas fa-dollar-sign"></i>
-                                <span>Coming soon</span>
+                                <i class="fas fa-key"></i>
+                                <span>All time</span>
                             </div>
                         </div>
                         
                         <div class="stat-card">
-                            <div class="stat-label">Avg. Session Time</div>
-                            <div class="stat-value" style="font-size: 2rem;">24m</div>
+                            <div class="stat-label">Redeemed Keys</div>
+                            <div class="stat-value">{{ stats.get('total_keys', 0) - stats.get('available_keys', 0) }}</div>
                             <div class="stat-change positive">
-                                <i class="fas fa-clock"></i>
-                                <span>+5m from last week</span>
-                            </div>
-                        </div>
-                        
-                        <div class="stat-card">
-                            <div class="stat-label">Server Uptime</div>
-                            <div class="stat-value" style="font-size: 2rem;">99.9%</div>
-                            <div class="stat-change positive">
-                                <i class="fas fa-server"></i>
-                                <span>Excellent</span>
+                                <i class="fas fa-check"></i>
+                                <span>Used licenses</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- ===== USERS MANAGEMENT PAGE ===== -->
+            <!-- ===== USERS PAGE ===== -->
             <div id="admin-page-users" class="page-content" style="display: none;">
                 <div class="card">
                     <div class="card-header">
@@ -2389,74 +2466,49 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             <i class="fas fa-users"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div class="card-title">Users Management</div>
-                            <div class="card-subtitle">{{ users|length }} total users</div>
+                            <div class="card-title">User Management</div>
+                            <div class="card-subtitle">Manage all registered users</div>
                         </div>
-                        <div style="display: flex; gap: 1rem;">
-                            <input type="text" id="userSearchAdmin" onkeyup="searchUsersAdmin()" placeholder="Search users..." class="form-input" style="width: 300px; padding: 0.625rem 1rem;">
-                            <button onclick="whitelistUser()" class="btn btn-primary btn-sm">
-                                <i class="fas fa-user-plus"></i>
-                                <span>Add User</span>
-                            </button>
-                        </div>
+                        <button onclick="showWhitelistModal()" class="btn btn-primary btn-sm">
+                            <i class="fas fa-user-plus"></i>
+                            <span>Add User</span>
+                        </button>
                     </div>
                     
                     <div class="table-container" style="margin-top: 1.5rem;">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>User</th>
+                                    <th>Discord ID</th>
                                     <th>License Key</th>
                                     <th>HWID</th>
                                     <th>Joined</th>
-                                    <th>Logins</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="usersTableAdmin">
-                                {% for user in users[:50] %}
-                                <tr data-user-id="{{ user.get('discord_id', '') }}">
+                            <tbody>
+                                {% for user in users[:20] %}
+                                <tr>
+                                    <td style="font-family: monospace; font-size: 0.875rem;">{{ user.get('discord_id', 'Unknown')[:16] }}</td>
+                                    <td style="font-family: monospace; font-size: 0.75rem;">{{ user.get('key', 'N/A')[:15] }}...</td>
                                     <td>
-                                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                            <div style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; color: var(--bg-dark);">
-                                                {{ user.get('discord_id', 'U')[0]|upper }}
-                                            </div>
-                                            <div>
-                                                <div style="font-weight: 600; font-size: 0.875rem;">{{ user.get('discord_id', 'Unknown')[:20] }}</div>
-                                                <div style="font-size: 0.75rem; color: var(--text-muted);">Discord ID</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <code style="background: rgba(16, 185, 129, 0.1); padding: 0.375rem 0.625rem; border-radius: var(--radius-sm); color: var(--success); font-size: 0.75rem;">
-                                            {{ user.get('key', 'None')[:12] }}...
-                                        </code>
-                                    </td>
-                                    <td>
-                                        <code style="font-size: 0.75rem; color: var(--text-muted);">
-                                            {% if user.get('hwid') %}
-                                                {% if user.get('hwid')|length > 12 %}
-                                                    {{ user.get('hwid')[:12] }}...
-                                                {% else %}
-                                                    {{ user.get('hwid') }}
-                                                {% endif %}
-                                            {% else %}
-                                                Not set
-                                            {% endif %}
-                                        </code>
+                                        {% if user.get('hwid') %}
+                                        <span class="badge badge-success"><i class="fas fa-check"></i> Set</span>
+                                        {% else %}
+                                        <span class="badge badge-warning"><i class="fas fa-times"></i> None</span>
+                                        {% endif %}
                                     </td>
                                     <td style="font-size: 0.875rem; color: var(--text-muted);">{{ user.get('joined_at', 'Unknown')[:10] }}</td>
                                     <td>
-                                        <span class="badge badge-primary" style="font-size: 0.75rem;">
-                                            {{ user.get('login_count', 0) }}
-                                        </span>
+                                        {% if user.get('discord_id') in [b.get('discord_id') for b in blacklisted] %}
+                                        <span class="badge badge-error"><i class="fas fa-ban"></i> Banned</span>
+                                        {% else %}
+                                        <span class="badge badge-success"><i class="fas fa-check"></i> Active</span>
+                                        {% endif %}
                                     </td>
                                     <td>
-                                        <span class="badge badge-success user-status-admin"><i class="fas fa-check"></i> Active</span>
-                                    </td>
-                                    <td>
-                                        <button onclick="manageUser('{{ user.get('discord_id', '') }}')" class="btn btn-secondary btn-sm">
+                                        <button onclick="manageUser('{{ user.get('discord_id') }}')" class="btn btn-ghost btn-sm" title="Manage User">
                                             <i class="fas fa-cog"></i>
                                         </button>
                                     </td>
@@ -2468,7 +2520,7 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                 </div>
             </div>
             
-            <!-- ===== KEYS MANAGEMENT PAGE ===== -->
+            <!-- ===== KEYS PAGE ===== -->
             <div id="admin-page-keys" class="page-content" style="display: none;">
                 <div class="card">
                     <div class="card-header">
@@ -2476,41 +2528,29 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             <i class="fas fa-key"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div class="card-title">License Keys</div>
-                            <div class="card-subtitle">{{ unused_keys|length }} available keys</div>
+                            <div class="card-title">License Key Management</div>
+                            <div class="card-subtitle">Generate and manage license keys</div>
                         </div>
-                        <button onclick="generateKeys()" class="btn btn-primary btn-sm">
+                        <button onclick="showGenerateKeyModal()" class="btn btn-primary btn-sm">
                             <i class="fas fa-plus"></i>
                             <span>Generate Keys</span>
                         </button>
                     </div>
                     
-                    <div class="grid grid-3" style="margin-top: 2rem; margin-bottom: 2rem;">
+                    <div class="grid grid-3" style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
                         <div class="stat-card">
                             <div class="stat-label">Total Keys</div>
-                            <div class="stat-value">{{ all_keys|length }}</div>
-                            <div class="stat-change">
-                                <i class="fas fa-key"></i>
-                                <span>Generated</span>
-                            </div>
+                            <div class="stat-value">{{ stats.get('total_keys', 0) }}</div>
                         </div>
                         
                         <div class="stat-card">
                             <div class="stat-label">Available</div>
-                            <div class="stat-value" style="color: var(--success);">{{ unused_keys|length }}</div>
-                            <div class="stat-change positive">
-                                <i class="fas fa-check"></i>
-                                <span>Ready to use</span>
-                            </div>
+                            <div class="stat-value" style="color: var(--success);">{{ stats.get('available_keys', 0) }}</div>
                         </div>
                         
                         <div class="stat-card">
-                            <div class="stat-label">Used Keys</div>
-                            <div class="stat-value">{{ all_keys|length - unused_keys|length }}</div>
-                            <div class="stat-change">
-                                <i class="fas fa-user-check"></i>
-                                <span>Redeemed</span>
-                            </div>
+                            <div class="stat-label">Used</div>
+                            <div class="stat-value" style="color: var(--primary);">{{ stats.get('total_keys', 0) - stats.get('available_keys', 0) }}</div>
                         </div>
                     </div>
                     
@@ -2519,32 +2559,29 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             <thead>
                                 <tr>
                                     <th>License Key</th>
-                                    <th>Created</th>
-                                    <th>Created By</th>
                                     <th>Status</th>
+                                    <th>Redeemed By</th>
+                                    <th>Created</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for key in unused_keys[:30] %}
+                                {% for key in all_keys[:20] %}
                                 <tr>
+                                    <td style="font-family: monospace; font-size: 0.875rem;">{{ key.get('key', 'N/A') }}</td>
                                     <td>
-                                        <code style="background: rgba(16, 185, 129, 0.1); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); color: var(--success); font-weight: 600;">
-                                            {{ key.get('key', '') }}
-                                        </code>
+                                        {% if key.get('used') == 1 %}
+                                        <span class="badge badge-error"><i class="fas fa-check"></i> Used</span>
+                                        {% else %}
+                                        <span class="badge badge-success"><i class="fas fa-clock"></i> Available</span>
+                                        {% endif %}
                                     </td>
+                                    <td style="font-family: monospace; font-size: 0.875rem;">{{ key.get('redeemed_by', 'None') }}</td>
                                     <td style="font-size: 0.875rem; color: var(--text-muted);">{{ key.get('created_at', 'Unknown')[:10] }}</td>
-                                    <td style="font-size: 0.875rem;">{{ key.get('created_by', 'System')[:20] }}</td>
-                                    <td><span class="badge badge-success">Available</span></td>
                                     <td>
-                                        <div style="display: flex; gap: 0.5rem;">
-                                            <button onclick="copyText('{{ key.get('key', '') }}')" class="btn btn-primary btn-sm">
-                                                <i class="fas fa-copy"></i>
-                                            </button>
-                                            <button onclick="deleteKey('{{ key.get('key', '') }}')" class="btn btn-secondary btn-sm">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
+                                        <button onclick="copyText('{{ key.get('key') }}')" class="btn btn-ghost btn-sm" title="Copy Key">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -2554,24 +2591,17 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                 </div>
             </div>
             
-            <!-- ===== ACTIVITY LOGS PAGE ===== -->
+            <!-- ===== LOGS PAGE ===== -->
             <div id="admin-page-logs" class="page-content" style="display: none;">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-clipboard-list"></i>
+                            <i class="fas fa-list"></i>
                         </div>
-                        <div style="flex: 1;">
+                        <div>
                             <div class="card-title">Activity Logs</div>
-                            <div class="card-subtitle">System-wide activity tracking</div>
+                            <div class="card-subtitle">System event history</div>
                         </div>
-                        <select class="form-input" style="width: 200px; padding: 0.5rem;">
-                            <option value="all">All Events</option>
-                            <option value="login">Logins</option>
-                            <option value="hwid_reset">HWID Resets</option>
-                            <option value="key_generated">Key Generation</option>
-                            <option value="blacklist">Bans</option>
-                        </select>
                     </div>
                     
                     <div class="table-container" style="margin-top: 1.5rem;">
@@ -2579,40 +2609,23 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             <thead>
                                 <tr>
                                     <th>Event Type</th>
-                                    <th>User</th>
-                                    <th>Description</th>
+                                    <th>User/Target</th>
                                     <th>IP Address</th>
+                                    <th>Details</th>
                                     <th>Timestamp</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><span class="badge badge-success"><i class="fas fa-sign-in-alt"></i> Login</span></td>
-                                    <td style="font-family: monospace; font-size: 0.875rem;">User#12345</td>
-                                    <td>Successful web login</td>
-                                    <td style="font-family: monospace; font-size: 0.875rem;">xxx.xxx.xxx.xxx</td>
-                                    <td style="color: var(--text-muted); font-size: 0.875rem;">5 mins ago</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="badge badge-primary"><i class="fas fa-key"></i> Key Gen</span></td>
+                                    <td>
+                                        <span class="badge badge-success">
+                                            <i class="fas fa-sign-in-alt"></i> Login
+                                        </span>
+                                    </td>
                                     <td style="font-family: monospace; font-size: 0.875rem;">Admin</td>
-                                    <td>Generated 5 new keys</td>
                                     <td style="font-family: monospace; font-size: 0.875rem;">xxx.xxx.xxx.xxx</td>
-                                    <td style="color: var(--text-muted); font-size: 0.875rem;">1 hour ago</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="badge badge-warning"><i class="fas fa-desktop"></i> HWID</span></td>
-                                    <td style="font-family: monospace; font-size: 0.875rem;">User#67890</td>
-                                    <td>HWID reset performed</td>
-                                    <td style="font-family: monospace; font-size: 0.875rem;">xxx.xxx.xxx.xxx</td>
-                                    <td style="color: var(--text-muted); font-size: 0.875rem;">3 hours ago</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="badge badge-error"><i class="fas fa-ban"></i> Ban</span></td>
-                                    <td style="font-family: monospace; font-size: 0.875rem;">User#11111</td>
-                                    <td>User blacklisted for ToS violation</td>
-                                    <td style="font-family: monospace; font-size: 0.875rem;">xxx.xxx.xxx.xxx</td>
-                                    <td style="color: var(--text-muted); font-size: 0.875rem;">1 day ago</td>
+                                    <td style="font-size: 0.875rem;">Web panel access</td>
+                                    <td style="font-size: 0.875rem; color: var(--text-muted);">Recent</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -2623,36 +2636,6 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
             <!-- ===== SETTINGS PAGE ===== -->
             <div id="admin-page-settings" class="page-content" style="display: none;">
                 <div class="grid grid-2">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-icon">
-                                <i class="fas fa-cog"></i>
-                            </div>
-                            <div>
-                                <div class="card-title">System Settings</div>
-                                <div class="card-subtitle">Configure system behavior</div>
-                            </div>
-                        </div>
-                        
-                        <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem;">
-                            <div>
-                                <label class="form-label">System Name</label>
-                                <input type="text" class="form-input" value="Banana Hub Enterprise" readonly>
-                            </div>
-                            
-                            <div>
-                                <label class="form-label">Website URL</label>
-                                <input type="text" class="form-input" value="{{ website_url }}" readonly>
-                            </div>
-                            
-                            <div>
-                                <label class="form-label">Max HWID Resets</label>
-                                <input type="number" class="form-input" value="1" readonly>
-                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">Per 5 minutes</p>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <div class="card">
                         <div class="card-header">
                             <div class="card-icon">
@@ -2670,14 +2653,58 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                                 <span>Create Backup</span>
                             </button>
                             
-                            <div style="padding: 1rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-md);">
-                                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                                    <i class="fas fa-info-circle" style="color: var(--warning);"></i>
-                                    <span style="font-weight: 600; font-size: 0.875rem;">Backup Info</span>
+                            <div style="padding: 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: var(--radius-md);">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <i class="fas fa-info-circle" style="color: var(--info);"></i>
+                                    <strong style="color: var(--info); font-size: 0.875rem;">Backup Info</strong>
                                 </div>
-                                <p style="font-size: 0.75rem; color: var(--text-muted);">
-                                    Regular backups are recommended to prevent data loss. Backups are saved to the backups/ directory.
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">
+                                    Regular backups are recommended. Backups are saved to the backups/ directory with timestamps.
                                 </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div>
+                                <div class="card-title">Security Settings</div>
+                                <div class="card-subtitle">System security configuration</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md); margin-bottom: 1rem;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem;">HWID Protection</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Prevent unauthorized device access</div>
+                                </div>
+                                <span class="badge badge-success">
+                                    <i class="fas fa-check"></i> Enabled
+                                </span>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md); margin-bottom: 1rem;">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem;">API Authentication</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Secure API key validation</div>
+                                </div>
+                                <span class="badge badge-success">
+                                    <i class="fas fa-lock"></i> Active
+                                </span>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--bg-darker); border-radius: var(--radius-md);">
+                                <div>
+                                    <div style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem;">Session Security</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">HTTPOnly secure cookies</div>
+                                </div>
+                                <span class="badge badge-success">
+                                    <i class="fas fa-shield-alt"></i> Protected
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -2688,226 +2715,303 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
     </main>
 </div>
 
+<!-- Generate Key Modal -->
+<div id="generateKeyModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 style="margin: 0;"><i class="fas fa-key"></i> Generate License Keys</h3>
+            <button onclick="closeModal('generateKeyModal')" class="btn btn-ghost btn-sm">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Number of Keys (1-25)</label>
+                <input type="number" id="keyCount" class="form-input" min="1" max="25" value="5" placeholder="Enter amount">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeModal('generateKeyModal')" class="btn btn-secondary">Cancel</button>
+            <button onclick="generateKeys()" class="btn btn-primary">
+                <i class="fas fa-key"></i> Generate
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Whitelist User Modal -->
+<div id="whitelistModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 style="margin: 0;"><i class="fas fa-user-plus"></i> Whitelist User</h3>
+            <button onclick="closeModal('whitelistModal')" class="btn btn-ghost btn-sm">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Discord ID</label>
+                <input type="text" id="whitelistDiscordId" class="form-input" placeholder="Enter Discord user ID">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeModal('whitelistModal')" class="btn btn-secondary">Cancel</button>
+            <button onclick="whitelistUser()" class="btn btn-primary">
+                <i class="fas fa-check"></i> Whitelist
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // Admin Page Navigation
-    function switchAdminPage(event, pageName) {
-        if (event) event.preventDefault();
-        
-        document.querySelectorAll('.page-content').forEach(page => {
-            page.style.display = 'none';
-            page.classList.remove('active');
-        });
-        
-        const targetPage = document.getElementById('admin-page-' + pageName);
-        if (targetPage) {
-            targetPage.style.display = 'block';
-            targetPage.classList.add('active');
-        }
-        
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        const activeLink = document.querySelector(`[data-page="${pageName}"]`);
-        if (activeLink) {
-            activeLink.classList.add('active');
-        }
-        
-        const titles = {
-            'dashboard': 'Admin Dashboard',
-            'analytics': 'System Analytics',
-            'users': 'Users Management',
-            'keys': 'License Keys',
-            'logs': 'Activity Logs',
-            'settings': 'System Settings'
-        };
-        document.getElementById('adminPageTitle').textContent = titles[pageName] || 'Admin Panel';
-        
-        history.pushState({page: pageName}, '', '/admin/' + (pageName === 'dashboard' ? '' : pageName));
-    }
+function switchAdminPage(event, pageName) {
+    if (event) event.preventDefault();
     
-    // Mark banned users
-    document.addEventListener('DOMContentLoaded', function() {
-        const blacklistedIds = {{ blacklisted|map(attribute='discord_id')|list|tojson }};
-        
-        document.querySelectorAll('[data-user-id]').forEach(row => {
-            const userId = row.getAttribute('data-user-id');
-            const statusBadge = row.querySelector('.user-status-admin');
-            
-            if (statusBadge && blacklistedIds.includes(userId)) {
-                statusBadge.className = 'badge badge-error user-status-admin';
-                statusBadge.innerHTML = '<i class="fas fa-ban"></i> Banned';
-            }
-        });
+    document.querySelectorAll('.page-content').forEach(page => {
+        page.style.display = 'none';
+        page.classList.remove('active');
     });
     
-    // Search users
-    function searchUsersAdmin() {
-        const input = document.getElementById('userSearchAdmin');
-        const filter = input.value.toUpperCase();
-        const table = document.getElementById('usersTableAdmin');
-        const rows = table.getElementsByTagName('tr');
-        
-        for (let i = 0; i < rows.length; i++) {
-            const cells = rows[i].getElementsByTagName('td');
-            let found = false;
-            
-            for (let j = 0; j < cells.length; j++) {
-                if (cells[j].textContent.toUpperCase().indexOf(filter) > -1) {
-                    found = true;
-                    break;
-                }
-            }
-            
-            rows[i].style.display = found ? '' : 'none';
-        }
-    }
-    
-    // Generate keys
-    async function generateKeys() {
-        const count = prompt('How many keys to generate? (1-25):', '5');
-        if (!count) return;
-        
-        const num = parseInt(count);
-        if (isNaN(num) || num < 1 || num > 25) {
-            alert('❌ Invalid count (must be 1-25)');
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/admin/generate-key', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({count: num})
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                alert(`✅ Generated ${data.count} keys!\\n\\n${data.keys.join('\\n')}`);
-                location.reload();
-            } else {
-                alert('❌ Failed to generate keys');
-            }
-        } catch (error) {
-            alert('❌ Connection error');
-        }
-    }
-    
-    // Whitelist user
-    async function whitelistUser() {
-        const discordId = prompt('Enter Discord User ID:');
-        if (!discordId) return;
-        
-        try {
-            const response = await fetch('/api/admin/whitelist', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({discord_id: discordId})
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                alert(`✅ User whitelisted!\\nDiscord ID: ${discordId}\\nLicense Key: ${data.key}`);
-                location.reload();
-            } else {
-                alert('❌ ' + data.error);
-            }
-        } catch (error) {
-            alert('❌ Failed to whitelist user');
-        }
-    }
-    
-    // Manage user
-    async function manageUser(discordId) {
-        const action = prompt(`Manage user: ${discordId}\\n\\n1 - Reset HWID\\n2 - Ban User\\n3 - Unban User\\n4 - Remove User\\n\\nEnter choice:`);
-        
-        if (action === '1') {
-            if (!confirm(`Reset HWID for ${discordId}?`)) return;
-            
-            try {
-                const response = await fetch('/api/admin/reset-hwid', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({discord_id: discordId})
-                });
-                
-                const data = await response.json();
-                alert(data.success ? '✅ HWID reset successfully!' : '❌ Failed to reset HWID');
-                if (data.success) location.reload();
-            } catch (error) {
-                alert('❌ Error resetting HWID');
-            }
-        } else if (action === '2' || action === '3') {
-            const reason = action === '2' ? (prompt('Ban reason:') || 'No reason provided') : 'Unbanned by admin';
-            
-            try {
-                const response = await fetch('/api/admin/blacklist', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({discord_id: discordId, reason: reason})
-                });
-                
-                const data = await response.json();
-                alert(data.success ? `✅ User ${data.action}ed!` : '❌ Failed');
-                if (data.success) location.reload();
-            } catch (error) {
-                alert('❌ Error updating user status');
-            }
-        } else if (action === '4') {
-            if (!confirm(`Permanently remove ${discordId}? This cannot be undone!`)) return;
-            
-            try {
-                const response = await fetch('/api/admin/unwhitelist', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({discord_id: discordId})
-                });
-                
-                const data = await response.json();
-                alert(data.success ? '✅ User removed!' : '❌ Failed to remove user');
-                if (data.success) location.reload();
-            } catch (error) {
-                alert('❌ Error removing user');
-            }
-        }
-    }
-    
-    // Create backup
-    async function createBackup() {
-        if (!confirm('Create database backup?')) return;
-        
-        try {
-            const response = await fetch('/api/admin/backup', {
-                method: 'POST'
-            });
-            
-            const data = await response.json();
-            alert(data.success ? `✅ Backup created successfully!\\nPath: ${data.path}` : '❌ ' + data.error);
-        } catch (error) {
-            alert('❌ Failed to create backup');
-        }
-    }
-    
-    // Copy text
-    async function copyText(text) {
-        await navigator.clipboard.writeText(text);
-        alert('✅ Copied to clipboard!');
-    }
-    
-    // Delete key
-    async function deleteKey(key) {
-        if (!confirm(`Delete key: ${key}?`)) return;
-        alert('⚠️ Key deletion feature coming soon!');
-    }
-    
-    // Handle browser navigation
-    window.addEventListener('popstate', function(event) {
-        if (event.state && event.state.page) {
-            switchAdminPage(null, event.state.page);
-        }
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
     });
+    
+    const targetPage = document.getElementById('admin-page-' + pageName);
+    if (targetPage) {
+        targetPage.style.display = 'block';
+        targetPage.classList.add('active');
+    }
+    
+    const targetLink = document.querySelector(`.nav-link[data-page="${pageName}"]`);
+    if (targetLink) {
+        targetLink.classList.add('active');
+    }
+    
+    const titles = {
+        'dashboard': 'Admin Dashboard',
+        'analytics': 'System Analytics',
+        'users': 'User Management',
+        'keys': 'License Keys',
+        'logs': 'Activity Logs',
+        'settings': 'System Settings'
+    };
+    
+    document.getElementById('adminPageTitle').textContent = titles[pageName] || 'Admin Panel';
+    
+    if (window.history && window.history.pushState) {
+        window.history.pushState({page: pageName}, '', `/admin/${pageName === 'dashboard' ? '' : pageName}`);
+    }
+}
+
+function showGenerateKeyModal() {
+    document.getElementById('generateKeyModal').style.display = 'flex';
+}
+
+function showWhitelistModal() {
+    document.getElementById('whitelistModal').style.display = 'flex';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+async function generateKeys() {
+    const count = parseInt(document.getElementById('keyCount').value);
+    
+    if (count < 1 || count > 25) {
+        showAdminNotification('Please enter a number between 1 and 25', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/generate-key', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({count: count})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAdminNotification(`Successfully generated ${data.count} keys!`, 'success');
+            closeModal('generateKeyModal');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showAdminNotification(data.error || 'Failed to generate keys', 'error');
+        }
+    } catch (error) {
+        console.error('Generate keys error:', error);
+        showAdminNotification('Connection error. Please try again.', 'error');
+    }
+}
+
+async function whitelistUser() {
+    const discordId = document.getElementById('whitelistDiscordId').value.trim();
+    
+    if (!discordId) {
+        showAdminNotification('Please enter a Discord ID', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/whitelist', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({discord_id: discordId})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAdminNotification(`User whitelisted! Key: ${data.key}`, 'success');
+            closeModal('whitelistModal');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showAdminNotification(data.error || 'Failed to whitelist user', 'error');
+        }
+    } catch (error) {
+        console.error('Whitelist error:', error);
+        showAdminNotification('Connection error. Please try again.', 'error');
+    }
+}
+
+async function createBackup() {
+    if (!confirm('Create a database backup?')) return;
+    
+    try {
+        const response = await fetch('/api/admin/backup', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAdminNotification(`Backup created: ${data.path}`, 'success');
+        } else {
+            showAdminNotification(data.error || 'Backup failed', 'error');
+        }
+    } catch (error) {
+        console.error('Backup error:', error);
+        showAdminNotification('Connection error. Please try again.', 'error');
+    }
+}
+
+function manageUser(discordId) {
+    showAdminNotification('User management coming soon!', 'info');
+}
+
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showAdminNotification('Copied to clipboard!', 'success');
+    }).catch(() => {
+        showAdminNotification('Failed to copy', 'error');
+    });
+}
+
+function showAdminNotification(message, type) {
+    const colors = {
+        'success': 'var(--success)',
+        'error': 'var(--error)',
+        'info': 'var(--info)',
+        'warning': 'var(--warning)'
+    };
+    
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 2rem;
+        right: 2rem;
+        padding: 1rem 1.5rem;
+        background: ${colors[type] || colors.info};
+        color: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+        max-width: 400px;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideInRight 0.3s ease reverse';
+        setTimeout(() => document.body.removeChild(notification), 300);
+    }, 3000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const path = window.location.pathname;
+    const page = path.split('/').pop() || 'dashboard';
+    
+    if (page && page !== 'admin') {
+        switchAdminPage(null, page);
+    }
+    
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    };
+});
 </script>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.7);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-2xl);
+    width: 90%;
+    max-width: 500px;
+    animation: scaleIn 0.3s ease;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+</style>
 """)
 
 # ==============================================================================
@@ -2918,7 +3022,7 @@ TEMPLATES = {
     'landing': LANDING_PAGE,
     'login': LOGIN_PAGE,
     'dashboard': DASHBOARD_PAGE,
-    'admin': ADMIN_PAGE,
+    'admin': ADMIN_PAGE
 }
 
 # Export all templates

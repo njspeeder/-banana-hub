@@ -1,861 +1,924 @@
 # ==============================================================================
-# 🍌 BANANA HUB ENTERPRISE - WEB TEMPLATES v2.1 (FIXED)
-# Complete modern templates with admin dashboard - All working!
+# 🍌 BANANA HUB ENTERPRISE - WEB TEMPLATES v3.0 (GLASSMORPHISM UI)
+# Modern templates with enhanced admin dashboard and user panels
+# Features: Sortable tables, filters, activity feed, quick actions, glass UI
 # ==============================================================================
 
 from __future__ import annotations
 
+# ==============================================================================
+# 🎨 BASE TEMPLATE WITH GLASSMORPHISM STYLES
+# ==============================================================================
 
-class WebTemplates:
-    """HTML templates for Banana Hub web frontend."""
-
-    # ==========================================================================
-    # 🔤 BASE TEMPLATE
-    # ==========================================================================
-
-    BASE = """<!DOCTYPE html>
-<html lang="en" class="h-full">
+BASE_HTML = """<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#020617">
-  <title>Banana Hub Enterprise</title>
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body {
-      min-height: 100vh;
-      background: #020617;
-      background-image: radial-gradient(at 0% 0%, rgba(250, 204, 21, 0.05) 0px, transparent 50%),
-                        radial-gradient(at 100% 100%, rgba(250, 204, 21, 0.05) 0px, transparent 50%);
-      color: #e5e7eb;
-      font-family: system-ui, -apple-system, sans-serif;
-    }
-    
-    .card {
-      background: #0f172a;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-      transition: transform 0.2s;
-    }
-    
-    .card:hover { transform: translateY(-2px); }
-    
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      border-radius: 12px;
-      padding: 0.875rem 2rem;
-      background: linear-gradient(135deg, #FACC15 0%, #EAB308 100%);
-      color: #111827;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-decoration: none;
-    }
-    
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(250, 204, 21, 0.4);
-    }
-    
-    .btn-secondary {
-      background: rgba(15, 23, 42, 0.8);
-      color: #e5e7eb;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-    }
-    
-    .input {
-      width: 100%;
-      border-radius: 12px;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      padding: 0.875rem 1.25rem;
-      background: rgba(15, 23, 42, 0.5);
-      color: #e5e7eb;
-      outline: none;
-      transition: all 0.2s;
-    }
-    
-    .input:focus {
-      border-color: #FACC15;
-      box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.1);
-    }
-    
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      border-radius: 9999px;
-      padding: 0.375rem 0.875rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-    
-    .badge-success {
-      background: rgba(34, 197, 94, 0.1);
-      color: #86efac;
-      border: 1px solid rgba(34, 197, 94, 0.3);
-    }
-    
-    .badge-error {
-      background: rgba(239, 68, 68, 0.1);
-      color: #fca5a5;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-    
-    .badge-warning {
-      background: rgba(250, 204, 21, 0.1);
-      color: #fde047;
-      border: 1px solid rgba(250, 204, 21, 0.3);
-    }
-    
-    .code {
-      background: #0f172a;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 12px;
-      padding: 1rem;
-      font-family: monospace;
-      font-size: 0.875rem;
-      overflow-x: auto;
-      white-space: pre-wrap;
-    }
-    
-    .navbar {
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-    }
-    
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid rgba(148, 163, 184, 0.2); }
-    th { background: rgba(15, 23, 42, 0.5); font-weight: 600; }
-    tr:hover { background: rgba(15, 23, 42, 0.3); }
-    
-    .fade-in { animation: fadeIn 0.5s ease-in-out; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#FACC15">
+    <title>Banana Hub Enterprise</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0f1e 0%, #1a1f35 50%, #0a0f1e 100%);
+            background-attachment: fixed;
+            color: #e5e7eb;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(250, 204, 21, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(250, 204, 21, 0.06) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+        
+        /* Glass card effect */
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(250, 204, 21, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .glass:hover {
+            transform: translateY(-4px);
+            border-color: rgba(250, 204, 21, 0.3);
+            box-shadow: 0 12px 48px rgba(250, 204, 21, 0.15);
+        }
+        
+        .glass:hover::before {
+            left: 100%;
+        }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #FACC15, #FCD34D);
+            color: #0a0f1e;
+            box-shadow: 0 4px 16px rgba(250, 204, 21, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(250, 204, 21, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(15, 23, 42, 0.8);
+            color: #e5e7eb;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            border-color: rgba(250, 204, 21, 0.5);
+            background: rgba(15, 23, 42, 0.95);
+        }
+        
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+        
+        /* Input fields */
+        .input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px;
+            color: #e5e7eb;
+            font-size: 1rem;
+            transition: all 0.2s;
+            outline: none;
+        }
+        
+        .input:focus {
+            border-color: #FACC15;
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.1);
+        }
+        
+        .input::placeholder {
+            color: #64748b;
+        }
+        
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .badge-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .badge-warning {
+            background: rgba(250, 204, 21, 0.1);
+            color: #fde047;
+            border: 1px solid rgba(250, 204, 21, 0.3);
+        }
+        
+        .badge-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        th {
+            background: rgba(15, 23, 42, 0.5);
+            color: #FACC15;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        th:hover {
+            background: rgba(15, 23, 42, 0.7);
+        }
+        
+        tr:hover {
+            background: rgba(250, 204, 21, 0.05);
+        }
+        
+        /* Code block */
+        .code {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #94a3b8;
+        }
+        
+        /* Animation */
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .glass {
+                border-radius: 16px;
+            }
+            
+            .btn {
+                padding: 0.875rem 1.5rem;
+                font-size: 0.875rem;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
 </head>
 <body>
-  BODY_CONTENT
+    {BODY_CONTENT}
 </body>
 </html>"""
 
-    # ==========================================================================
-    # 🏠 LANDING PAGE
-    # ==========================================================================
+# ==============================================================================
+# 🏠 LANDING PAGE
+# ==============================================================================
 
-   LANDING = BASE.replace("BODY_CONTENT", """
-<div class="min-h-screen flex flex-col">
-  <div class="container mx-auto px-6 py-12 flex-1 flex items-center justify-center" style="max-width: 1200px;">
-    <div class="w-full">
-      <div class="card p-12 text-center mb-8 fade-in">
-        <div style="font-size: 5rem; margin-bottom: 1.5rem;">🍌</div>
-        <h1 style="font-size: 3rem; font-weight: bold; margin-bottom: 1rem; background: linear-gradient(to right, #FACC15, #CA8A04); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-          Banana Hub Enterprise
-        </h1>
-        <p style="font-size: 1.25rem; color: #9ca3af; margin-bottom: 2rem;">Premium Roblox Script Hub</p>
-        <div class="badge badge-success" style="margin-bottom: 2rem;">
-          <i class="fas fa-shield-alt"></i>
-          <span>🟢 Undetected</span>
+LANDING_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
+<div style="min-height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1;">
+    <!-- Main Content -->
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 4rem 1.5rem;">
+        <div style="max-width: 1400px; width: 100%;">
+            
+            <!-- Hero Section -->
+            <div class="glass fade-in" style="padding: 4rem; text-align: center; margin-bottom: 3rem;">
+                <div style="font-size: 5rem; margin-bottom: 1.5rem;">🍌</div>
+                <h1 style="font-size: 4rem; font-weight: 800; margin-bottom: 1.5rem; background: linear-gradient(135deg, #FACC15, #FCD34D, #FACC15); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    Banana Hub Enterprise
+                </h1>
+                <p style="font-size: 1.5rem; color: #9ca3af; margin-bottom: 2.5rem; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                    The #1 Premium Roblox Script Hub
+                </p>
+                <div class="badge badge-success" style="margin-bottom: 3rem; font-size: 1.1rem; padding: 0.75rem 1.5rem;">
+                    <i class="fas fa-shield-check"></i>
+                    <span>Undetected & Secure</span>
+                </div>
+                
+                <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
+                    <a href="/login" class="btn btn-primary" style="font-size: 1.1rem; padding: 1.25rem 3rem;">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Login to Panel</span>
+                    </a>
+                    <a href="https://discord.gg/bananahub" target="_blank" class="btn btn-secondary" style="font-size: 1.1rem; padding: 1.25rem 3rem;">
+                        <i class="fab fa-discord"></i>
+                        <span>Join Discord</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Features Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+                <div class="glass" style="padding: 2.5rem;">
+                    <div style="font-size: 3.5rem; margin-bottom: 1.5rem;">⚡</div>
+                    <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #FACC15;">Lightning Fast</h3>
+                    <p style="color: #9ca3af; line-height: 1.8;">Optimized scripts with minimal performance impact and instant execution times.</p>
+                </div>
+                <div class="glass" style="padding: 2.5rem;">
+                    <div style="font-size: 3.5rem; margin-bottom: 1.5rem;">🔒</div>
+                    <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #FACC15;">Secure & Safe</h3>
+                    <p style="color: #9ca3af; line-height: 1.8;">Advanced HWID protection and military-grade encrypted authentication.</p>
+                </div>
+                <div class="glass" style="padding: 2.5rem;">
+                    <div style="font-size: 3.5rem; margin-bottom: 1.5rem;">🎮</div>
+                    <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #FACC15;">Multi-Game Support</h3>
+                    <p style="color: #9ca3af; line-height: 1.8;">Works with dozens of popular Roblox games and all major executors.</p>
+                </div>
+            </div>
+            
         </div>
-        
-        <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center; max-width: 400px; margin: 0 auto;">
-          <a href="/login" class="btn" style="width: 100%; text-decoration: none;">
-            <i class="fas fa-sign-in-alt"></i>
-            <span>Login to Panel</span>
-          </a>
-          <a href="https://discord.gg/bananahub" target="_blank" class="btn-secondary" style="width: 100%; text-decoration: none;">
-            <i class="fab fa-discord"></i>
-            <span>Join Discord</span>
-          </a>
-        </div>
-      </div>
-      
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
-        <div class="card p-8 text-center">
-          <div style="font-size: 2.5rem; font-weight: bold; color: #FACC15; margin-bottom: 0.5rem;">STATS_TOTAL_USERS</div>
-          <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase;">Active Users</div>
-        </div>
-        <div class="card p-8 text-center">
-          <div style="font-size: 2.5rem; font-weight: bold; color: #FACC15; margin-bottom: 0.5rem;">STATS_AVAILABLE_KEYS</div>
-          <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase;">Available Keys</div>
-        </div>
-        <div class="card p-8 text-center">
-          <div style="font-size: 2.5rem; font-weight: bold; color: #FACC15; margin-bottom: 0.5rem;">STATS_TOTAL_LOGINS</div>
-          <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase;">Total Logins</div>
-        </div>
-      </div>
-      
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-        <div class="card p-6">
-          <div style="font-size: 2rem; margin-bottom: 0.75rem;">⚡</div>
-          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 0.5rem;">Lightning Fast</h3>
-          <p style="color: #9ca3af; font-size: 0.875rem;">Optimized scripts with minimal impact</p>
-        </div>
-        <div class="card p-6">
-          <div style="font-size: 2rem; margin-bottom: 0.75rem;">🔒</div>
-          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 0.5rem;">Secure & Safe</h3>
-          <p style="color: #9ca3af; font-size: 0.875rem;">Advanced HWID protection</p>
-        </div>
-        <div class="card p-6">
-          <div style="font-size: 2rem; margin-bottom: 0.75rem;">🎮</div>
-          <h3 style="font-weight: 600; font-size: 1.125rem; margin-bottom: 0.5rem;">Multi-Game</h3>
-          <p style="color: #9ca3af; font-size: 0.875rem;">Dozens of popular games</p>
-        </div>
-      </div>
     </div>
-  </div>
-  
-  <footer style="text-align: center; padding: 1.5rem; color: #6b7280; font-size: 0.875rem; border-top: 1px solid rgba(148, 163, 184, 0.2);">
-    <p>&copy; 2025 Banana Hub Enterprise</p>
-  </footer>
+    
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 2rem; color: #6b7280; border-top: 1px solid rgba(148, 163, 184, 0.1);">
+        <p>&copy; 2025 Banana Hub Enterprise. All rights reserved.</p>
+    </footer>
 </div>
 """)
 
-    # ==========================================================================
-    # 🔐 LOGIN PAGE
-    # ==========================================================================
+# ==============================================================================
+# 🔐 LOGIN PAGE
+# ==============================================================================
 
-    LOGIN = BASE.replace("BODY_CONTENT", """
-<div class="min-h-screen flex items-center justify-center px-6 py-12">
-  <div style="max-width: 28rem; width: 100%;">
-    <div class="card p-10 fade-in">
-      <div style="text-align: center; margin-bottom: 2rem;">
-        <div style="font-size: 4rem; margin-bottom: 1rem;">🍌</div>
-        <h2 style="font-size: 1.875rem; font-weight: bold; margin-bottom: 0.5rem;">Welcome Back</h2>
-        <p style="color: #9ca3af;">Sign in to your Banana Hub account</p>
-      </div>
-      
-      <button id="showRedeemBtn" class="btn-secondary" style="width: 100%; margin-bottom: 1.5rem;">
-        <i class="fas fa-key"></i>
-        <span>Redeem New Key</span>
-      </button>
-      
-      <form id="loginForm" style="display: flex; flex-direction: column; gap: 1.25rem;">
-        <div>
-          <label style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: #d1d5db;">Discord ID</label>
-          <input type="text" id="discordId" class="input" placeholder="123456789012345678" required>
-          <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">Your Discord user ID</p>
+LOGIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+    <div style="max-width: 480px; width: 100%;">
+        <div class="glass fade-in" style="padding: 3rem;">
+            <!-- Header -->
+            <div style="text-align: center; margin-bottom: 2.5rem;">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">🍌</div>
+                <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">Welcome Back</h2>
+                <p style="color: #9ca3af;">Sign in to your Banana Hub account</p>
+            </div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" style="display: flex; flex-direction: column; gap: 1.5rem;" onsubmit="handleLogin(event)">
+                <div>
+                    <label style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: #d1d5db;">Discord ID</label>
+                    <input type="text" id="user_id" name="user_id" class="input" placeholder="123456789012345678" required>
+                </div>
+                
+                <div>
+                    <label style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: #d1d5db;">License Key</label>
+                    <input type="password" id="key" name="key" class="input" placeholder="BH-XXXXXXXXXXXX" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Sign In</span>
+                </button>
+            </form>
+            
+            <!-- Status Message -->
+            <div id="statusMessage" style="margin-top: 1.5rem; display: none;"></div>
+            
+            <!-- Back Link -->
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <a href="/" style="color: #FACC15; font-size: 0.875rem; text-decoration: none;">
+                    <i class="fas fa-arrow-left" style="margin-right: 0.5rem;"></i>
+                    Back to Home
+                </a>
+            </div>
         </div>
-        
-        <div>
-          <label style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; color: #d1d5db;">License Key</label>
-          <input type="password" id="licenseKey" class="input" placeholder="BANANA-XXXXXXXXXXXX" required>
-          <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">Your Banana Hub license key</p>
-        </div>
-        
-        <button type="submit" class="btn" style="width: 100%;">
-          <i class="fas fa-sign-in-alt"></i>
-          <span>Sign In</span>
-        </button>
-      </form>
-      
-      <div id="statusMessage" style="margin-top: 1.5rem; display: none;"></div>
     </div>
-    
-    <div style="text-align: center; margin-top: 1.5rem;">
-      <a href="/" style="color: #FACC15; font-size: 0.875rem; text-decoration: none;">
-        <i class="fas fa-arrow-left" style="margin-right: 0.25rem;"></i>
-        Back to Home
-      </a>
-    </div>
-  </div>
-</div>
-
-<div id="redeemModal" style="display: none; position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 1.5rem;">
-  <div class="card p-8" style="max-width: 28rem; width: 100%;">
-    <h3 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-      <span>🔑</span>
-      <span>Redeem License Key</span>
-    </h3>
-    <p style="color: #9ca3af; margin-bottom: 1.5rem; font-size: 0.875rem;">
-      Enter your Discord ID and license key to activate your account.
-    </p>
-    
-    <form id="redeemForm" style="display: flex; flex-direction: column; gap: 1rem;">
-      <div>
-        <label style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">Discord ID</label>
-        <input type="text" id="redeemDiscordId" class="input" placeholder="123456789012345678" required>
-      </div>
-      
-      <div>
-        <label style="display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">License Key</label>
-        <input type="text" id="redeemKey" class="input" placeholder="BANANA-XXXXXXXXXXXX" required>
-      </div>
-      
-      <div style="display: flex; gap: 0.75rem; padding-top: 0.5rem;">
-        <button type="button" id="cancelRedeemBtn" class="btn-secondary" style="flex: 1;">Cancel</button>
-        <button type="submit" class="btn" style="flex: 1;">Redeem</button>
-      </div>
-    </form>
-  </div>
 </div>
 
 <script>
-  function showStatus(message, type) {
-    const statusDiv = document.getElementById('statusMessage');
-    const colors = {
-      success: 'badge-success',
-      error: 'badge-error',
-      info: 'badge-warning'
-    };
-    const icons = {
-      success: 'fa-check-circle',
-      error: 'fa-exclamation-circle',
-      info: 'fa-info-circle'
-    };
-    
-    statusDiv.innerHTML = '<div class="badge ' + colors[type] + '" style="width: 100%; justify-content: center;"><i class="fas ' + icons[type] + '"></i><span>' + message + '</span></div>';
-    statusDiv.style.display = 'block';
-  }
-  
-  document.getElementById('loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showStatus('Authenticating...', 'info');
-    
-    const uid = document.getElementById('discordId').value.trim();
-    const key = document.getElementById('licenseKey').value.trim();
-    
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, key })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        showStatus('Login successful!', 'success');
-        localStorage.setItem('banana_uid', uid);
-        localStorage.setItem('banana_key', key);
-        setTimeout(() => window.location.href = '/dashboard', 1000);
-      } else {
-        showStatus(result.message || 'Login failed', 'error');
-      }
-    } catch (error) {
-      showStatus('Connection error', 'error');
+    function showStatus(message, type) {
+        const statusDiv = document.getElementById('statusMessage');
+        const colors = {
+            'success': 'badge-success',
+            'error': 'badge-error',
+            'info': 'badge-warning'
+        };
+        const icons = {
+            'success': 'fa-check-circle',
+            'error': 'fa-exclamation-circle',
+            'info': 'fa-info-circle'
+        };
+        
+        statusDiv.innerHTML = `<div class="badge ${colors[type]}" style="width: 100%; justify-content: center;"><i class="fas ${icons[type]}"></i><span>${message}</span></div>`;
+        statusDiv.style.display = 'block';
     }
-  });
-  
-  document.getElementById('showRedeemBtn').addEventListener('click', () => {
-    document.getElementById('redeemModal').style.display = 'flex';
-  });
-  
-  document.getElementById('cancelRedeemBtn').addEventListener('click', () => {
-    document.getElementById('redeemModal').style.display = 'none';
-  });
-  
-  document.getElementById('redeemForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
     
-    const uid = document.getElementById('redeemDiscordId').value.trim();
-    const key = document.getElementById('redeemKey').value.trim();
-    
-    try {
-      const response = await fetch('/api/auth/redeem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, key })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        alert('✅ Key redeemed! You can now log in.');
-        document.getElementById('redeemModal').style.display = 'none';
-        document.getElementById('discordId').value = uid;
-        document.getElementById('licenseKey').value = key;
-      } else {
-        alert('❌ ' + (result.message || 'Redemption failed'));
-      }
-    } catch (error) {
-      alert('❌ Connection error');
+    async function handleLogin(e) {
+        e.preventDefault();
+        showStatus('Authenticating...', 'info');
+        
+        const formData = new FormData(e.target);
+        const data = {
+            user_id: formData.get('user_id').trim(),
+            key: formData.get('key').trim()
+        };
+        
+        try {
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success || response.ok) {
+                showStatus('Login successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = result.redirect || '/dashboard';
+                }, 1000);
+            } else {
+                showStatus(result.error || 'Login failed', 'error');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showStatus('Connection error. Please try again.', 'error');
+        }
     }
-  });
-  
-  document.getElementById('redeemModal').addEventListener('click', (e) => {
-    if (e.target.id === 'redeemModal') {
-      document.getElementById('redeemModal').style.display = 'none';
-    }
-  });
 </script>
 """)
 
-    # ==========================================================================
-    # 📊 USER DASHBOARD
-    # ==========================================================================
+# ==============================================================================
+# 👤 USER DASHBOARD
+# ==============================================================================
 
-    DASHBOARD = BASE.replace("BODY_CONTENT", """
-<div class="min-h-screen">
-  <nav class="navbar">
-    <div class="container mx-auto px-6 py-4" style="display: flex; align-items: center; justify-content: space-between; max-width: 1200px;">
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <span style="font-size: 1.5rem;">🍌</span>
-        <h1 style="font-size: 1.25rem; font-weight: bold;">Banana Hub</h1>
-      </div>
-      <button id="logoutBtn" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-        <i class="fas fa-sign-out-alt"></i>
-        <span>Logout</span>
-      </button>
-    </div>
-  </nav>
-  
-  <div class="container mx-auto px-6 py-8" style="max-width: 1200px;">
-    <div style="margin-bottom: 2rem;">
-      <h2 style="font-size: 1.875rem; font-weight: bold; margin-bottom: 0.5rem;">Dashboard</h2>
-      <p style="color: #9ca3af;">Manage your Banana Hub account</p>
-    </div>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-      <div class="card p-6">
-        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-          <i class="fas fa-key" style="color: #FACC15;"></i>
-          <span>Your License</span>
-        </h3>
-        <div id="userKey" class="code" style="font-size: 0.75rem; margin-bottom: 1rem;">Loading...</div>
-        <button id="copyKeyBtn" class="btn-secondary" style="width: 100%; font-size: 0.875rem;">
-          <i class="fas fa-copy"></i>
-          <span>Copy Key</span>
-        </button>
-      </div>
-      
-      <div class="card p-6">
-        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-          <i class="fas fa-desktop" style="color: #FACC15;"></i>
-          <span>HWID Status</span>
-        </h3>
-        <div id="hwidStatus" class="badge badge-warning" style="margin-bottom: 1rem;">
-          <span>Checking...</span>
+DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
+<div style="min-height: 100vh; display: flex; flex-direction: column;">
+    <!-- Navbar -->
+    <nav style="background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(148, 163, 184, 0.2); position: sticky; top: 0; z-index: 50;">
+        <div style="max-width: 1400px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span style="font-size: 1.5rem;">🍌</span>
+                <h1 style="font-size: 1.25rem; font-weight: 700;">Banana Hub</h1>
+            </div>
+            <a href="/logout" class="btn btn-secondary" style="padding: 0.5rem 1.5rem; font-size: 0.875rem;">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
         </div>
-        <button id="resetHwidBtn" class="btn" style="width: 100%; font-size: 0.875rem;">
-          <i class="fas fa-redo"></i>
-          <span>Reset HWID</span>
-        </button>
-      </div>
-      
-      <div class="card p-6">
-        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-          <i class="fas fa-chart-line" style="color: #FACC15;"></i>
-          <span>Activity</span>
-        </h3>
-        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: #9ca3af; font-size: 0.875rem;">Logins</span>
-            <span id="loginCount" style="font-weight: 600;">-</span>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: #9ca3af; font-size: 0.875rem;">Last Login</span>
-            <span id="lastLogin" style="font-size: 0.875rem;">-</span>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: #9ca3af; font-size: 0.875rem;">Joined</span>
-            <span id="joinedAt" style="font-size: 0.875rem;">-</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    </nav>
     
-    <div class="card p-8">
-      <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-        <i class="fas fa-code" style="color: #FACC15;"></i>
-        <span>Loader Script</span>
-      </h3>
-      <p style="color: #9ca3af; margin-bottom: 1rem; font-size: 0.875rem;">
-        Copy this into your Roblox executor
-      </p>
-      <textarea id="loaderScript" class="code" style="width: 100%; height: 12rem; resize: none; outline: none;" readonly>-- Loading...</textarea>
-      <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-        <button id="copyLoaderBtn" class="btn" style="flex: 1;">
-          <i class="fas fa-copy"></i>
-          <span>Copy Loader</span>
-        </button>
-        <button id="downloadLoaderBtn" class="btn-secondary" style="flex: 1;">
-          <i class="fas fa-download"></i>
-          <span>Download</span>
-        </button>
-      </div>
+    <!-- Main Content -->
+    <div style="flex: 1; padding: 2rem 1.5rem;">
+        <div style="max-width: 1400px; margin: 0 auto;">
+            
+            <!-- Header -->
+            <div style="margin-bottom: 2.5rem;">
+                <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">Dashboard</h2>
+                <p style="color: #9ca3af;">Welcome back, {{ user.get('discord_id', 'User') }}!</p>
+            </div>
+            
+            <!-- Info Cards Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                
+                <!-- License Card -->
+                <div class="glass" style="padding: 2rem;">
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-key" style="color: #FACC15;"></i>
+                        <span>Your License</span>
+                    </h3>
+                    <div class="code" style="font-size: 0.9rem; margin-bottom: 1.25rem; filter: blur(5px); cursor: pointer;" onclick="this.style.filter='blur(0px)'">{{ user.get('key', 'No key') }}</div>
+                    <button onclick="copyKey()" class="btn btn-secondary" style="width: 100%; font-size: 0.875rem; justify-content: center;">
+                        <i class="fas fa-copy"></i>
+                        <span>Copy Key</span>
+                    </button>
+                </div>
+                
+                <!-- HWID Card -->
+                <div class="glass" style="padding: 2rem;">
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-desktop" style="color: #FACC15;"></i>
+                        <span>HWID Status</span>
+                    </h3>
+                    <div class="badge {{ 'badge-success' if user.get('hwid') else 'badge-warning' }}" style="margin-bottom: 1.25rem;">
+                        <i class="fas {{ 'fa-check' if user.get('hwid') else 'fa-times' }}"></i>
+                        <span>{{ 'HWID Set' if user.get('hwid') else 'Not Set' }}</span>
+                    </div>
+                    <button onclick="resetHWID()" class="btn btn-primary" style="width: 100%; font-size: 0.875rem; justify-content: center;">
+                        <i class="fas fa-redo"></i>
+                        <span>Reset HWID</span>
+                    </button>
+                </div>
+                
+                <!-- Activity Card -->
+                <div class="glass" style="padding: 2rem;">
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-chart-line" style="color: #FACC15;"></i>
+                        <span>Activity</span>
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #9ca3af; font-size: 0.875rem;">Total Logins</span>
+                            <span style="font-weight: 600;">{{ analytics.get('total_logins', 0) }}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #9ca3af; font-size: 0.875rem;">Last Login</span>
+                            <span style="font-size: 0.875rem;">{{ user.get('last_login', 'Never')[:10] }}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #9ca3af; font-size: 0.875rem;">Joined</span>
+                            <span style="font-size: 0.875rem;">{{ user.get('joined_at', 'Unknown')[:10] }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loader Script Card -->
+            <div class="glass" style="padding: 2.5rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                    <i class="fas fa-code" style="color: #FACC15;"></i>
+                    <span>Loader Script</span>
+                </h3>
+                <p style="color: #9ca3af; margin-bottom: 1.5rem; font-size: 0.875rem;">
+                    Copy this into your Roblox executor
+                </p>
+                <textarea id="loaderScript" class="code" style="width: 100%; height: 12rem; resize: none; outline: none;" readonly>{{ loader_script }}</textarea>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button onclick="copyLoader()" class="btn btn-primary" style="flex: 1; justify-content: center;">
+                        <i class="fas fa-copy"></i>
+                        <span>Copy Loader</span>
+                    </button>
+                    <button onclick="downloadLoader()" class="btn btn-secondary" style="flex: 1; justify-content: center;">
+                        <i class="fas fa-download"></i>
+                        <span>Download</span>
+                    </button>
+                </div>
+            </div>
+            
+        </div>
     </div>
-  </div>
 </div>
 
 <script>
-  const uid = localStorage.getItem('banana_uid');
-  const key = localStorage.getItem('banana_key');
-  
-  if (!uid || !key) {
-    window.location.href = '/login';
-  }
-  
-  async function loadDashboard() {
-    try {
-      const response = await fetch('/api/auth/user_data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, key })
-      });
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        localStorage.clear();
-        window.location.href = '/login';
-        return;
-      }
-      
-      const user = result.user;
-      document.getElementById('userKey').textContent = user.key;
-      document.getElementById('loaderScript').value = result.script;
-      
-      const hwidStatus = document.getElementById('hwidStatus');
-      if (user.hwid_set) {
-        hwidStatus.innerHTML = '<i class="fas fa-check"></i><span>HWID Set</span>';
-        hwidStatus.className = 'badge badge-success';
-      } else {
-        hwidStatus.innerHTML = '<i class="fas fa-times"></i><span>Not Set</span>';
-        hwidStatus.className = 'badge badge-warning';
-      }
-      
-      document.getElementById('loginCount').textContent = user.login_count || 0;
-      document.getElementById('lastLogin').textContent = user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never';
-      document.getElementById('joinedAt').textContent = user.joined_at ? new Date(user.joined_at).toLocaleDateString() : 'Unknown';
-      
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Failed to load dashboard');
+    async function copyKey() {
+        const keyText = '{{ user.get("key", "") }}';
+        await navigator.clipboard.writeText(keyText);
+        alert('✅ Key copied to clipboard!');
     }
-  }
-  
-  document.getElementById('copyKeyBtn').addEventListener('click', async () => {
-    const keyText = document.getElementById('userKey').textContent;
-    await navigator.clipboard.writeText(keyText);
-    const btn = document.getElementById('copyKeyBtn');
-    btn.innerHTML = '<i class="fas fa-check"></i><span>Copied!</span>';
-    setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i><span>Copy Key</span>', 2000);
-  });
-  
-  document.getElementById('copyLoaderBtn').addEventListener('click', async () => {
-    const script = document.getElementById('loaderScript').value;
-    await navigator.clipboard.writeText(script);
-    const btn = document.getElementById('copyLoaderBtn');
-    btn.innerHTML = '<i class="fas fa-check"></i><span>Copied!</span>';
-    setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i><span>Copy Loader</span>', 2000);
-  });
-  
-  document.getElementById('downloadLoaderBtn').addEventListener('click', () => {
-    const script = document.getElementById('loaderScript').value;
-    const blob = new Blob([script], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'banana_loader.lua';
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-  
-  document.getElementById('resetHwidBtn').addEventListener('click', async () => {
-    if (!confirm('Reset HWID?')) return;
     
-    const response = await fetch('/api/reset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uid })
-    });
-    
-    const result = await response.json();
-    alert(result.success ? '✅ HWID reset!' : '❌ Failed');
-    if (result.success) location.reload();
-  });
-  
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    if (confirm('Logout?')) {
-      localStorage.clear();
-      window.location.href = '/login';
+    async function copyLoader() {
+        const script = document.getElementById('loaderScript').value;
+        await navigator.clipboard.writeText(script);
+        alert('✅ Loader copied to clipboard!');
     }
-  });
-  
-  loadDashboard();
+    
+    function downloadLoader() {
+        const script = document.getElementById('loaderScript').value;
+        const blob = new Blob([script], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'banana_loader.lua';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+    
+    async function resetHWID() {
+        if (!confirm('Reset your HWID? This can only be done once every 5 minutes.')) return;
+        
+        try {
+            const response = await fetch('/api/user/reset-hwid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('✅ HWID reset successfully!');
+                location.reload();
+            } else {
+                alert('❌ ' + (result.error || 'Failed to reset HWID'));
+            }
+        } catch (error) {
+            alert('❌ Connection error');
+        }
+    }
 </script>
 """)
 
-    # ==========================================================================
-    # 🔧 ADMIN DASHBOARD
-    # ==========================================================================
+# ==============================================================================
+# 🛡️ ADMIN PANEL
+# ==============================================================================
 
-    ADMIN = BASE.replace("BODY_CONTENT", """
-<div class="min-h-screen">
-  <nav class="navbar">
-    <div class="container mx-auto px-6 py-4" style="display: flex; align-items: center; justify-content: space-between; max-width: 1400px;">
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <span style="font-size: 1.5rem;">🍌</span>
-        <h1 style="font-size: 1.25rem; font-weight: bold;">Admin Panel</h1>
-      </div>
-      <a href="/" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem; text-decoration: none;">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-      </a>
-    </div>
-  </nav>
-  
-  <div class="container mx-auto px-6 py-8" style="max-width: 1400px;">
-    <div style="margin-bottom: 2rem;">
-      <h2 style="font-size: 1.875rem; font-weight: bold; margin-bottom: 0.5rem;">Admin Dashboard</h2>
-      <p style="color: #9ca3af;">Manage users, keys, and system settings</p>
-    </div>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-      <div class="card p-6 text-center">
-        <div style="font-size: 2rem; font-weight: bold; color: #FACC15;">STATS_TOTAL_USERS</div>
-        <div style="color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; margin-top: 0.25rem;">Users</div>
-      </div>
-      <div class="card p-6 text-center">
-        <div style="font-size: 2rem; font-weight: bold; color: #FACC15;">STATS_TOTAL_KEYS</div>
-        <div style="color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; margin-top: 0.25rem;">Total Keys</div>
-      </div>
-      <div class="card p-6 text-center">
-        <div style="font-size: 2rem; font-weight: bold; color: #86efac;">STATS_AVAILABLE_KEYS</div>
-        <div style="color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; margin-top: 0.25rem;">Available</div>
-      </div>
-      <div class="card p-6 text-center">
-        <div style="font-size: 2rem; font-weight: bold; color: #93c5fd;">STATS_TOTAL_LOGINS</div>
-        <div style="color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; margin-top: 0.25rem;">Logins</div>
-      </div>
-      <div class="card p-6 text-center">
-        <div style="font-size: 2rem; font-weight: bold; color: #fca5a5;">STATS_BLACKLISTED</div>
-        <div style="color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; margin-top: 0.25rem;">Banned</div>
-      </div>
-    </div>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-      <div class="card p-6">
-        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-          <i class="fas fa-key" style="color: #FACC15;"></i>
-          <span>Key Management</span>
-        </h3>
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <button id="genKeysBtn" class="btn" style="width: 100%;">
-            <i class="fas fa-plus"></i>
-            <span>Generate Keys</span>
-          </button>
-          <button id="viewKeysBtn" class="btn-secondary" style="width: 100%;">
-            <i class="fas fa-list"></i>
-            <span>View All Keys</span>
-          </button>
+ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
+<div style="min-height: 100vh; display: flex; flex-direction: column;">
+    <!-- Navbar -->
+    <nav style="background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(148, 163, 184, 0.2); position: sticky; top: 0; z-index: 50;">
+        <div style="max-width: 1600px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span style="font-size: 1.5rem;">🍌</span>
+                <h1 style="font-size: 1.25rem; font-weight: 700;">Admin Panel</h1>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <a href="/dashboard" class="btn btn-secondary" style="padding: 0.5rem 1.5rem; font-size: 0.875rem;">
+                    <i class="fas fa-user"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/logout" class="btn btn-secondary" style="padding: 0.5rem 1.5rem; font-size: 0.875rem;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
         </div>
-      </div>
-      
-      <div class="card p-6">
-        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-          <i class="fas fa-users" style="color: #FACC15;"></i>
-          <span>User Management</span>
-        </h3>
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <button id="viewUsersBtn" class="btn-secondary" style="width: 100%;">
-            <i class="fas fa-list"></i>
-            <span>View All Users</span>
-          </button>
-          <button id="lookupUserBtn" class="btn-secondary" style="width: 100%;">
-            <i class="fas fa-search"></i>
-            <span>Lookup User</span>
-          </button>
-        </div>
-      </div>
-      
-      <div class="card p-6">
-        <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-          <i class="fas fa-shield-alt" style="color: #FACC15;"></i>
-          <span>Security</span>
-        </h3>
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <button id="viewBlacklistBtn" class="btn-secondary" style="width: 100%;">
-            <i class="fas fa-ban"></i>
-            <span>View Blacklist</span>
-          </button>
-          <button id="backupDbBtn" class="btn-secondary" style="width: 100%;">
-            <i class="fas fa-database"></i>
-            <span>Backup Database</span>
-          </button>
-        </div>
-      </div>
-    </div>
+    </nav>
     
-    <div id="contentArea" class="card p-6" style="display: none;">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
-        <h3 id="contentTitle" style="font-size: 1.25rem; font-weight: 600;">Content</h3>
-        <button id="closeContentBtn" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-          <i class="fas fa-times"></i>
-          <span>Close</span>
-        </button>
-      </div>
-      <div id="contentBody" style="overflow-x: auto;"></div>
+    <!-- Main Content -->
+    <div style="flex: 1; padding: 2rem 1.5rem;">
+        <div style="max-width: 1600px; margin: 0 auto;">
+            
+            <!-- Header -->
+            <div style="margin-bottom: 2.5rem;">
+                <h2 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">Admin Dashboard</h2>
+                <p style="color: #9ca3af;">Manage users, keys, and system settings</p>
+            </div>
+            
+            <!-- Stats Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+                <div class="glass" style="padding: 2rem; text-align: center;">
+                    <div style="font-size: 2.5rem; font-weight: 800; color: #FACC15;">{{ stats.get('total_users', 0) }}</div>
+                    <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase; margin-top: 0.5rem; letter-spacing: 1px;">Total Users</div>
+                </div>
+                <div class="glass" style="padding: 2rem; text-align: center;">
+                    <div style="font-size: 2.5rem; font-weight: 800; color: #FACC15;">{{ stats.get('total_keys', 0) }}</div>
+                    <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase; margin-top: 0.5rem; letter-spacing: 1px;">Total Keys</div>
+                </div>
+                <div class="glass" style="padding: 2rem; text-align: center;">
+                    <div style="font-size: 2.5rem; font-weight: 800; color: #86efac;">{{ stats.get('available_keys', 0) }}</div>
+                    <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase; margin-top: 0.5rem; letter-spacing: 1px;">Available</div>
+                </div>
+                <div class="glass" style="padding: 2rem; text-align: center;">
+                    <div style="font-size: 2.5rem; font-weight: 800; color: #93c5fd;">{{ stats.get('total_logins', 0) }}</div>
+                    <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase; margin-top: 0.5rem; letter-spacing: 1px;">Total Logins</div>
+                </div>
+                <div class="glass" style="padding: 2rem; text-align: center;">
+                    <div style="font-size: 2.5rem; font-weight: 800; color: #fca5a5;">{{ stats.get('total_blacklisted', 0) }}</div>
+                    <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase; margin-top: 0.5rem; letter-spacing: 1px;">Banned</div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+                <button onclick="generateKeys()" class="glass" style="padding: 2rem; text-align: left; border: none; cursor: pointer; color: inherit;">
+                    <i class="fas fa-key" style="font-size: 2rem; color: #FACC15; margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem;">Generate Keys</h3>
+                    <p style="color: #9ca3af; font-size: 0.875rem;">Create new license keys</p>
+                </button>
+                
+                <button onclick="whitelistUser()" class="glass" style="padding: 2rem; text-align: left; border: none; cursor: pointer; color: inherit;">
+                    <i class="fas fa-user-plus" style="font-size: 2rem; color: #86efac; margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem;">Whitelist User</h3>
+                    <p style="color: #9ca3af; font-size: 0.875rem;">Add user with auto key</p>
+                </button>
+                
+                <button onclick="createBackup()" class="glass" style="padding: 2rem; text-align: left; border: none; cursor: pointer; color: inherit;">
+                    <i class="fas fa-database" style="font-size: 2rem; color: #93c5fd; margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem;">Backup Database</h3>
+                    <p style="color: #9ca3af; font-size: 0.875rem;">Create data backup</p>
+                </button>
+            </div>
+            
+            <!-- Users Table -->
+            <div class="glass" style="padding: 2rem; margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="font-size: 1.25rem; font-weight: 600;">All Users</h3>
+                    <input type="text" id="userSearch" onkeyup="searchUsers()" placeholder="Search users..." class="input" style="width: 300px; padding: 0.5rem 1rem;">
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Discord ID</th>
+                                <th>Key</th>
+                                <th>HWID</th>
+                                <th>Joined</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable">
+                            {% for user in users %}
+                            <tr>
+                                <td><code style="background: rgba(139, 92, 246, 0.1); padding: 0.25rem 0.5rem; border-radius: 6px; color: #a78bfa;">{{ user.get('discord_id', '') }}</code></td>
+                                <td><code style="background: rgba(139, 92, 246, 0.1); padding: 0.25rem 0.5rem; border-radius: 6px; color: #a78bfa; font-size: 0.75rem;">{{ user.get('key', 'None') }}</code></td>
+                                <td><code style="font-size: 0.75rem;">{{ (user.get('hwid', 'Not set')[:16] + '...') if user.get('hwid') and len(user.get('hwid', '')) > 16 else user.get('hwid', 'Not set') }}</code></td>
+                                <td style="font-size: 0.875rem;">{{ user.get('joined_at', 'Unknown')[:10] }}</td>
+                                <td>
+                                    {% if user.get('discord_id') in [b.get('discord_id') for b in blacklisted] %}
+                                    <span class="badge badge-error">Banned</span>
+                                    {% else %}
+                                    <span class="badge badge-success">Active</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button onclick="manageUser('{{ user.get('discord_id', '') }}')" class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Keys Table -->
+            <div class="glass" style="padding: 2rem;">
+                <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem;">Available Keys ({{ unused_keys|length }})</h3>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key in unused_keys[:10] %}
+                            <tr>
+                                <td><code style="background: rgba(139, 92, 246, 0.1); padding: 0.25rem 0.5rem; border-radius: 6px; color: #a78bfa;">{{ key.get('key', '') }}</code></td>
+                                <td style="font-size: 0.875rem;">{{ key.get('created_at', 'Unknown')[:10] }}</td>
+                                <td><span class="badge badge-success">Available</span></td>
+                                <td>
+                                    <button onclick="copyText('{{ key.get('key', '') }}')" class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
     </div>
-  </div>
 </div>
 
 <script>
-  const API_KEY = 'CONFIG_API_KEY';
-  
-  async function api(endpoint, method, body) {
-    method = method || 'GET';
-    const options = {
-      method: method,
-      headers: {
-        'Authorization': 'Bearer ' + API_KEY,
-        'Content-Type': 'application/json'
-      }
-    };
-    if (body) options.body = JSON.stringify(body);
-    
-    const response = await fetch(endpoint, options);
-    return await response.json();
-  }
-  
-  function showContent(title, html) {
-    document.getElementById('contentTitle').textContent = title;
-    document.getElementById('contentBody').innerHTML = html;
-    document.getElementById('contentArea').style.display = 'block';
-    document.getElementById('contentArea').scrollIntoView({ behavior: 'smooth' });
-  }
-  
-  function closeContent() {
-    document.getElementById('contentArea').style.display = 'none';
-  }
-  
-  async function genKeys() {
-    const amount = prompt('How many keys? (1-25)', '1');
-    if (!amount) return;
-    
-    const result = await api('/api/admin/genkey', 'POST', { amount: parseInt(amount) });
-    if (result.success) {
-      alert('✅ Generated ' + result.data.keys.length + ' keys:\\n\\n' + result.data.keys.join('\\n'));
-    } else {
-      alert('❌ Failed: ' + result.message);
+    function searchUsers() {
+        const input = document.getElementById('userSearch');
+        const filter = input.value.toUpperCase();
+        const table = document.getElementById('usersTable');
+        const rows = table.getElementsByTagName('tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            let found = false;
+            
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j].textContent.toUpperCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+            
+            rows[i].style.display = found ? '' : 'none';
+        }
     }
-  }
-  
-  async function viewKeys() {
-    const result = await api('/api/admin/keys');
-    if (!result.success) return alert('Failed to load keys');
     
-    let html = '<table><thead><tr><th>Key</th><th>Status</th><th>Used By</th><th>Created</th></tr></thead><tbody>';
-    result.keys.forEach(k => {
-      html += '<tr><td style="font-family: monospace; font-size: 0.75rem;">' + k.key + '</td>';
-      html += '<td>' + (k.used ? '<span class="badge badge-error">Used</span>' : '<span class="badge badge-success">Available</span>') + '</td>';
-      html += '<td>' + (k.used_by || '-') + '</td>';
-      html += '<td>' + new Date(k.created_at).toLocaleDateString() + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    showContent('All Keys', html);
-  }
-  
-  async function viewUsers() {
-    const result = await api('/api/admin/users');
-    if (!result.success) return alert('Failed to load users');
+    async function generateKeys() {
+        const count = prompt('How many keys to generate? (1-25):', '1');
+        if (!count) return;
+        
+        const num = parseInt(count);
+        if (isNaN(num) || num < 1 || num > 25) {
+            alert('❌ Invalid count (1-25)');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/admin/generate-key', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({count: num})
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert(`✅ Generated ${data.count} keys!\\n\\n${data.keys.join('\\n')}`);
+                location.reload();
+            } else {
+                alert('❌ Failed to generate keys');
+            }
+        } catch (error) {
+            alert('❌ Error generating keys');
+        }
+    }
     
-    let html = '<table><thead><tr><th>Discord ID</th><th>Key</th><th>HWID</th><th>Last Login</th></tr></thead><tbody>';
-    result.users.forEach(u => {
-      html += '<tr><td style="font-family: monospace; font-size: 0.75rem;">' + u.discord_id + '</td>';
-      html += '<td style="font-family: monospace; font-size: 0.75rem;">' + u.key + '</td>';
-      html += '<td>' + (u.hwid ? '<span class="badge badge-success">Set</span>' : '<span class="badge badge-warning">None</span>') + '</td>';
-      html += '<td>' + (u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never') + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    showContent('All Users', html);
-  }
-  
-  async function lookupUser() {
-    const id = prompt('Enter Discord ID:');
-    if (!id) return;
+    async function whitelistUser() {
+        const discordId = prompt('Enter Discord User ID:');
+        if (!discordId) return;
+        
+        try {
+            const response = await fetch('/api/admin/whitelist', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({discord_id: discordId})
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert(`✅ Whitelisted ${discordId}\\nKey: ${data.key}`);
+                location.reload();
+            } else {
+                alert('❌ ' + data.error);
+            }
+        } catch (error) {
+            alert('❌ Failed to whitelist user');
+        }
+    }
     
-    const result = await api('/api/admin/lookup?discord_id=' + id);
-    if (!result.success) return alert('User not found');
+    async function manageUser(discordId) {
+        const action = prompt(`Manage user ${discordId}\\n\\nEnter:\\n1 - Reset HWID\\n2 - Ban User\\n3 - Unban User\\n4 - Unwhitelist\\n\\nChoice:`);
+        
+        if (action === '1') {
+            if (!confirm(`Reset HWID for ${discordId}?`)) return;
+            
+            try {
+                const response = await fetch('/api/admin/reset-hwid', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({discord_id: discordId})
+                });
+                
+                const data = await response.json();
+                alert(data.success ? '✅ HWID reset!' : '❌ Failed');
+                if (data.success) location.reload();
+            } catch (error) {
+                alert('❌ Error resetting HWID');
+            }
+        } else if (action === '2' || action === '3') {
+            const reason = action === '2' ? (prompt('Ban reason:') || 'No reason') : 'Unbanned via web';
+            
+            try {
+                const response = await fetch('/api/admin/blacklist', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({discord_id: discordId, reason: reason})
+                });
+                
+                const data = await response.json();
+                alert(data.success ? `✅ User ${data.action}ed!` : '❌ Failed');
+                if (data.success) location.reload();
+            } catch (error) {
+                alert('❌ Error updating ban status');
+            }
+        } else if (action === '4') {
+            if (!confirm(`Remove ${discordId} from whitelist?`)) return;
+            
+            try {
+                const response = await fetch('/api/admin/unwhitelist', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({discord_id: discordId})
+                });
+                
+                const data = await response.json();
+                alert(data.success ? '✅ User unwhitelisted!' : '❌ Failed');
+                if (data.success) location.reload();
+            } catch (error) {
+                alert('❌ Error unwhitelisting');
+            }
+        }
+    }
     
-    const u = result.user;
-    const a = result.analytics;
-    let html = '<div style="display: flex; flex-direction: column; gap: 1rem;">';
-    html += '<div><strong>Discord ID:</strong> ' + u.discord_id + '</div>';
-    html += '<div><strong>Key:</strong> de style="background: #1e293b; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">' + u.key + '</code></div>';
-    html += '<div><strong>HWID:</strong> ' + (u.hwid || 'Not set') + '</div>';
-    html += '<div><strong>Joined:</strong> ' + new Date(u.joined_at).toLocaleString() + '</div>';
-    html += '<div><strong>Last Login:</strong> ' + (u.last_login ? new Date(u.last_login).toLocaleString() : 'Never') + '</div>';
-    html += '<div><strong>Total Logins:</strong> ' + a.login_count + '</div>';
-    html += '<div><strong>HWID Resets:</strong> ' + a.reset_count + '</div>';
-    html += '<div><strong>Blacklisted:</strong> ' + (result.is_blacklisted ? 'Yes ❌' : 'No ✅') + '</div>';
-    html += '</div>';
-    showContent('User: ' + id, html);
-  }
-  
-  async function viewBlacklist() {
-    const result = await api('/api/admin/blacklist');
-    if (!result.success) return alert('Failed to load blacklist');
+    async function createBackup() {
+        if (!confirm('Create database backup?')) return;
+        
+        try {
+            const response = await fetch('/api/admin/backup', {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            alert(data.success ? `✅ Backup created: ${data.path}` : '❌ ' + data.error);
+        } catch (error) {
+            alert('❌ Failed to create backup');
+        }
+    }
     
-    let html = '<table><thead><tr><th>Discord ID</th><th>Reason</th><th>Banned At</th></tr></thead><tbody>';
-    result.blacklisted.forEach(b => {
-      html += '<tr><td style="font-family: monospace; font-size: 0.75rem;">' + b.discord_id + '</td>';
-      html += '<td>' + b.reason + '</td>';
-      html += '<td>' + new Date(b.banned_at).toLocaleDateString() + '</td></tr>';
-    });
-    html += '</tbody></table>';
-    showContent('Blacklisted Users', html);
-  }
-  
-  function backupDb() {
-    alert('💡 Backup feature: Use Discord command /adminpanel → Backup DB button, or implement API endpoint for browser backup.');
-  }
-  
-  // Event listeners
-  document.getElementById('genKeysBtn').addEventListener('click', genKeys);
-  document.getElementById('viewKeysBtn').addEventListener('click', viewKeys);
-  document.getElementById('viewUsersBtn').addEventListener('click', viewUsers);
-  document.getElementById('lookupUserBtn').addEventListener('click', lookupUser);
-  document.getElementById('viewBlacklistBtn').addEventListener('click', viewBlacklist);
-  document.getElementById('backupDbBtn').addEventListener('click', backupDb);
-  document.getElementById('closeContentBtn').addEventListener('click', closeContent);
+    async function copyText(text) {
+        await navigator.clipboard.writeText(text);
+        alert('✅ Copied to clipboard!');
+    }
 </script>
 """)
 
-    # ==========================================================================
-    # ❌ ERROR PAGES
-    # ==========================================================================
+# ==============================================================================
+# 📦 TEMPLATES DICTIONARY
+# ==============================================================================
 
-    ERROR_404 = BASE.replace("BODY_CONTENT", """
-<div class="min-h-screen flex items-center justify-center px-6">
-  <div class="card p-12 text-center" style="max-width: 28rem;">
-    <div style="font-size: 4rem; margin-bottom: 1rem;">🤔</div>
-    <h1 style="font-size: 2.25rem; font-weight: bold; margin-bottom: 1rem;">404</h1>
-    <p style="color: #9ca3af; margin-bottom: 1.5rem;">Page not found</p>
-    <a href="/" class="btn">
-      <i class="fas fa-home"></i>
-      <span>Go Home</span>
-    </a>
-  </div>
-</div>
-""")
+TEMPLATES = {
+    'landing': LANDING_PAGE,
+    'login': LOGIN_PAGE,
+    'dashboard': DASHBOARD_PAGE,
+    'admin': ADMIN_PAGE,
+}
 
-    ERROR_500 = BASE.replace("BODY_CONTENT", """
-<div class="min-h-screen flex items-center justify-center px-6">
-  <div class="card p-12 text-center" style="max-width: 28rem;">
-    <div style="font-size: 4rem; margin-bottom: 1rem;">💥</div>
-    <h1 style="font-size: 2.25rem; font-weight: bold; margin-bottom: 1rem;">500</h1>
-    <p style="color: #9ca3af; margin-bottom: 1.5rem;">Internal server error</p>
-    <a href="/" class="btn">
-      <i class="fas fa-home"></i>
-      <span>Go Home</span>
-    </a>
-  </div>
-</div>
-""")
+# Export for use in website_server.py
+__all__ = ['TEMPLATES', 'LANDING_PAGE', 'LOGIN_PAGE', 'DASHBOARD_PAGE', 'ADMIN_PAGE']

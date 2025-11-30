@@ -158,7 +158,7 @@ class WebTemplates:
     # 🏠 LANDING PAGE
     # ==========================================================================
 
-    LANDING = BASE.replace("BODY_CONTENT", """
+   LANDING = BASE.replace("BODY_CONTENT", """
 <div class="min-h-screen flex flex-col">
   <div class="container mx-auto px-6 py-12 flex-1 flex items-center justify-center" style="max-width: 1200px;">
     <div class="w-full">
@@ -174,11 +174,11 @@ class WebTemplates:
         </div>
         
         <div style="display: flex; flex-direction: column; gap: 1rem; align-items: center; max-width: 400px; margin: 0 auto;">
-          <a href="/login" class="btn" style="width: 100%;">
+          <a href="/login" class="btn" style="width: 100%; text-decoration: none;">
             <i class="fas fa-sign-in-alt"></i>
             <span>Login to Panel</span>
           </a>
-          <a href="https://discord.gg/bananahub" target="_blank" class="btn-secondary" style="width: 100%;">
+          <a href="https://discord.gg/bananahub" target="_blank" class="btn-secondary" style="width: 100%; text-decoration: none;">
             <i class="fab fa-discord"></i>
             <span>Join Discord</span>
           </a>
@@ -187,15 +187,15 @@ class WebTemplates:
       
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
         <div class="card p-8 text-center">
-          <div style="font-size: 2.5rem; font-weight: bold; color: #FACC15; margin-bottom: 0.5rem;">100+</div>
+          <div style="font-size: 2.5rem; font-weight: bold; color: #FACC15; margin-bottom: 0.5rem;">STATS_TOTAL_USERS</div>
           <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase;">Active Users</div>
         </div>
         <div class="card p-8 text-center">
-          <div style="font-size: 2.5rem; font-weight: bold; color: #FACC15; margin-bottom: 0.5rem;">50+</div>
+          <div style="font-size: 2.5rem; font-weight: bold; color: #FACC15; margin-bottom: 0.5rem;">STATS_AVAILABLE_KEYS</div>
           <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase;">Available Keys</div>
         </div>
         <div class="card p-8 text-center">
-          <div style="font-size: 2.5rem; font-weight: bold; color: #FACC15; margin-bottom: 0.5rem;">1000+</div>
+          <div style="font-size: 2.5rem; font-weight: bold; color: #FACC15; margin-bottom: 0.5rem;">STATS_TOTAL_LOGINS</div>
           <div style="color: #9ca3af; font-size: 0.875rem; text-transform: uppercase;">Total Logins</div>
         </div>
       </div>

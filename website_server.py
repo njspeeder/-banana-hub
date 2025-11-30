@@ -1,742 +1,412 @@
 # ==============================================================================
-# 🍌 BANANA HUB ENTERPRISE - FLASK WEB SERVER v2.1 (FINAL)
-# Complete web server with all fixes - Dashboard working!
+# 🍌 BANANA HUB ENTERPRISE - WEBSITE SERVER v3.0 (GLASSMORPHISM UI)
+# Modern Flask web server with enhanced admin dashboard and user panels
+# Features: Sortable tables, filters, activity feed, quick actions, glass UI
 # ==============================================================================
 
 from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, UTC
 from functools import wraps
-from typing import Any, Dict, Optional
+from typing import Optional, Dict, Any, List
 
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, render_template_string, request, jsonify, redirect, url_for, session
 from flask_cors import CORS
 
 from config import Config
 from database import db
-from web_templates import WebTemplates
+from web_templates import TEMPLATES
 
 # ==============================================================================
-# 🔧 FLASK APP SETUP
+# 🔧 LOGGING
+# ==============================================================================
+
+log = logging.getLogger("website_server")
+
+# ==============================================================================
+# 🌐 FLASK APP INITIALIZATION
 # ==============================================================================
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
-app.config['JSON_SORT_KEYS'] = False
-
-# Enable CORS for API access
-CORS(app, resources={
-    r"/api/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "PUT", "DELETE"],
-        "allow_headers": ["Content-Type", "Authorization"]
-    }
-})
-
-# Setup logging
-log = logging.getLogger("website_server")
-log.setLevel(logging.DEBUG if Config.DEBUG else logging.INFO)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", Config.ADMIN_API_KEY)
+CORS(app)
 
 # ==============================================================================
-# 🔨 HELPER FUNCTIONS
+# 🛡️ AUTHENTICATION DECORATORS
 # ==============================================================================
 
-def render_page(template: str, **context) -> str:
-    """Render a template with context replacements (no Jinja2 needed)."""
-    # Always include config
-    context['config'] = Config
-    
-    # Replace stats placeholders (for admin page)
-    if 'stats' in context:
-        stats = context['stats']
-        template = template.replace('STATS_TOTAL_USERS', str(stats.get('total_users', 0)))
-        template = template.replace('STATS_TOTAL_KEYS', str(stats.get('total_keys', 0)))
-        template = template.replace('STATS_AVAILABLE_KEYS', str(stats.get('available_keys', 0)))
-        template = template.replace('STATS_TOTAL_LOGINS', str(stats.get('total_logins', 0)))
-        template = template.replace('STATS_BLACKLISTED', str(stats.get('blacklisted_users', 0)))
-    
-    # Replace config API key (for admin page JavaScript)
-    template = template.replace('CONFIG_API_KEY', Config.ADMIN_API_KEY)
-    
-    return template
-
-
-def require_api_key(f):
-    """Decorator to require admin API key for protected endpoints."""
+def require_auth(f):
+    """Require user authentication."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        auth_header = request.headers.get('Authorization', '')
-        expected = f"Bearer {Config.ADMIN_API_KEY}"
-        
-        if auth_header != expected:
-            log.warning(f"Unauthorized API access attempt from {request.remote_addr}")
-            return jsonify({
-                "success": False,
-                "status": "error",
-                "message": "Unauthorized - Invalid API key",
-                "data": {}
-            }), 401
-        
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
         return f(*args, **kwargs)
-    
     return decorated_function
 
-
-def validate_discord_id(discord_id: str) -> bool:
-    """Validate Discord ID format (17-20 digit snowflake)."""
-    return discord_id.isdigit() and 17 <= len(discord_id) <= 20
-
-
-def validate_key_format(key: str) -> bool:
-    """Validate Banana Hub key format."""
-    import re
-    return bool(re.match(r'^BANANA-[A-Z0-9]{12,}$', key.strip().upper()))
-
+def require_admin(f):
+    """Require admin authentication."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Check session admin or API key
+        is_session_admin = session.get('is_admin', False)
+        api_key = request.headers.get('X-Admin-Key') or request.args.get('api_key')
+        is_api_admin = api_key == Config.ADMIN_API_KEY
+        
+        if not (is_session_admin or is_api_admin):
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        return f(*args, **kwargs)
+    return decorated_function
 
 # ==============================================================================
-# 🌐 PUBLIC WEB ROUTES
+# 🏠 PUBLIC ROUTES
 # ==============================================================================
 
 @app.route('/')
 def index():
-    """Landing page with stats."""
-    try:
-        stats = db.get_stats()
-    except Exception as e:
-        log.error(f"Error loading stats: {e}")
-        stats = {
-            'total_users': 0,
-            'available_keys': 0,
-            'total_logins': 0
-        }
-    
-    return render_page(WebTemplates.LANDING, stats=stats)
+    """Landing page with glassmorphism design."""
+    return render_template_string(
+        TEMPLATES['landing'],
+        website_url=Config.WEBSITE_URL,
+        base_url=Config.BASE_URL
+    )
 
-
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Login page."""
-    return render_page(WebTemplates.LOGIN)
+    """User login page."""
+    if request.method == 'POST':
+        data = request.get_json() if request.is_json else request.form
+        user_id = data.get('user_id', '').strip()
+        key = data.get('key', '').strip().upper()
+        
+        if not user_id or not key:
+            return jsonify({'error': 'User ID and Key required'}), 400
+        
+        # Verify user
+        user = db.get_user(user_id)
+        if not user or user.get('key') != key:
+            return jsonify({'error': 'Invalid credentials'}), 401
+        
+        # Check blacklist
+        if db.is_blacklisted(user_id):
+            return jsonify({'error': 'Account banned'}), 403
+        
+        # Set session
+        session['user_id'] = user_id
+        session['key'] = key
+        
+        # Check if admin
+        try:
+            owner_id = str(Config.OWNER_ID)
+            session['is_admin'] = (user_id == owner_id)
+        except:
+            session['is_admin'] = False
+        
+        # Log login
+        db.log_event('web_login', user_id, request.remote_addr, 'User logged in via web')
+        
+        return jsonify({
+            'success': True,
+            'redirect': url_for('admin_panel' if session['is_admin'] else 'dashboard')
+        })
+    
+    return render_template_string(TEMPLATES['login'])
 
+@app.route('/logout')
+def logout():
+    """Logout user."""
+    session.clear()
+    return redirect(url_for('index'))
+
+# ==============================================================================
+# 👤 USER DASHBOARD
+# ==============================================================================
 
 @app.route('/dashboard')
+@require_auth
 def dashboard():
-    """User dashboard (client-side auth via localStorage)."""
-    try:
-        return render_page(WebTemplates.DASHBOARD)
-    except Exception as e:
-        log.error(f"Dashboard error: {e}", exc_info=True)
-        return f"<h1>Error Loading Dashboard</h1><pre>{str(e)}</pre>", 500
+    """Enhanced user dashboard with glassmorphism UI."""
+    user_id = session.get('user_id')
+    user = db.get_user(user_id)
+    
+    if not user:
+        session.clear()
+        return redirect(url_for('login'))
+    
+    # Get user analytics
+    analytics = db.get_user_analytics(user_id)
+    
+    # Generate loader script
+    loader_script = generate_loader_script(user_id, user.get('key'))
+    
+    # Get recent activity (last 10 events)
+    recent_activity = get_user_recent_activity(user_id, limit=10)
+    
+    return render_template_string(
+        TEMPLATES['dashboard'],
+        user=user,
+        analytics=analytics,
+        loader_script=loader_script,
+        recent_activity=recent_activity,
+        base_url=Config.BASE_URL,
+        website_url=Config.WEBSITE_URL
+    )
 
+@app.route('/api/user/reset-hwid', methods=['POST'])
+@require_auth
+def api_reset_hwid():
+    """API endpoint to reset user HWID."""
+    user_id = session.get('user_id')
+    
+    success = db.reset_hwid(user_id)
+    if success:
+        db.log_event('hwid_reset', user_id, request.remote_addr, 'Web reset')
+        return jsonify({'success': True, 'message': 'HWID reset successfully'})
+    
+    return jsonify({'success': False, 'error': 'Failed to reset HWID'}), 500
+
+@app.route('/api/user/activity')
+@require_auth
+def api_user_activity():
+    """Get user activity with filters."""
+    user_id = session.get('user_id')
+    event_type = request.args.get('event_type', 'all')
+    limit = int(request.args.get('limit', 20))
+    
+    activity = get_user_recent_activity(user_id, event_type, limit)
+    return jsonify({'activity': activity})
+
+# ==============================================================================
+# 🛡️ ADMIN PANEL
+# ==============================================================================
 
 @app.route('/admin')
+@require_auth
+@require_admin
 def admin_panel():
-    """Admin dashboard with full statistics."""
-    try:
-        # Get basic stats
-        stats = db.get_stats()
-        
-        # Get additional stats
-        conn = db.get_connection()
-        cur = conn.cursor()
-        
-        # Total keys (all)
-        cur.execute("SELECT COUNT(*) FROM keys")
-        stats['total_keys'] = cur.fetchone()[0]
-        
-        # Blacklisted users
-        cur.execute("SELECT COUNT(*) FROM blacklist")
-        stats['blacklisted_users'] = cur.fetchone()[0]
-        
-        conn.close()
-        
-    except Exception as e:
-        log.error(f"Error loading admin stats: {e}")
-        stats = {
-            'total_users': 0,
-            'total_keys': 0,
-            'available_keys': 0,
-            'total_logins': 0,
-            'blacklisted_users': 0
-        }
+    """Enhanced admin panel with tables, filters, and analytics."""
+    # Get all users
+    users = db.get_all_users()
     
-    return render_page(WebTemplates.ADMIN, stats=stats)
+    # Get all keys
+    all_keys = db.get_all_keys()
+    unused_keys = [k for k in all_keys if k.get('used') == 0]
+    
+    # Get blacklisted users
+    blacklisted = db.get_blacklisted_users()
+    
+    # Get system stats
+    stats = db.get_stats()
+    
+    # Get recent activity (last 50 events)
+    recent_activity = get_all_recent_activity(limit=50)
+    
+    # Get HWID reset history
+    hwid_resets = get_hwid_reset_history(limit=20)
+    
+    # Get recent logins
+    recent_logins = get_recent_logins(limit=20)
+    
+    return render_template_string(
+        TEMPLATES['admin'],
+        users=users,
+        unused_keys=unused_keys,
+        all_keys=all_keys,
+        blacklisted=blacklisted,
+        stats=stats,
+        recent_activity=recent_activity,
+        hwid_resets=hwid_resets,
+        recent_logins=recent_logins,
+        base_url=Config.BASE_URL,
+        website_url=Config.WEBSITE_URL
+    )
 
+@app.route('/api/admin/users')
+@require_admin
+def api_admin_users():
+    """Get all users with filtering and sorting."""
+    users = db.get_all_users()
+    
+    # Apply filters
+    search = request.args.get('search', '').lower()
+    status_filter = request.args.get('status', 'all')
+    
+    if search:
+        users = [u for u in users if search in u.get('discord_id', '').lower() or search in u.get('key', '').lower()]
+    
+    if status_filter == 'banned':
+        users = [u for u in users if db.is_blacklisted(u.get('discord_id'))]
+    elif status_filter == 'active':
+        users = [u for u in users if not db.is_blacklisted(u.get('discord_id'))]
+    
+    # Apply sorting
+    sort_by = request.args.get('sort', 'joined_at')
+    reverse = request.args.get('order', 'desc') == 'desc'
+    
+    try:
+        users.sort(key=lambda x: x.get(sort_by, ''), reverse=reverse)
+    except:
+        pass
+    
+    return jsonify({'users': users})
+
+@app.route('/api/admin/keys')
+@require_admin
+def api_admin_keys():
+    """Get all keys with filtering."""
+    keys = db.get_all_keys()
+    
+    # Apply filters
+    status_filter = request.args.get('status', 'all')
+    
+    if status_filter == 'unused':
+        keys = [k for k in keys if k.get('used') == 0]
+    elif status_filter == 'used':
+        keys = [k for k in keys if k.get('used') == 1]
+    
+    return jsonify({'keys': keys})
+
+@app.route('/api/admin/generate-key', methods=['POST'])
+@require_admin
+def api_generate_key():
+    """Generate new keys."""
+    data = request.get_json()
+    count = min(int(data.get('count', 1)), 25)
+    
+    keys = []
+    for _ in range(count):
+        key = generate_key()
+        if db.generate_key_entry(key, session.get('user_id', 'admin')):
+            keys.append(key)
+    
+    db.log_event('key_generated', session.get('user_id'), request.remote_addr, f'Generated {len(keys)} keys')
+    
+    return jsonify({'success': True, 'keys': keys, 'count': len(keys)})
+
+@app.route('/api/admin/whitelist', methods=['POST'])
+@require_admin
+def api_whitelist_user():
+    """Whitelist a user with auto key generation."""
+    data = request.get_json()
+    discord_id = data.get('discord_id', '').strip()
+    
+    if not discord_id:
+        return jsonify({'error': 'Discord ID required'}), 400
+    
+    # Check if already has key
+    existing = db.get_user(discord_id)
+    if existing and existing.get('key'):
+        return jsonify({'error': 'User already has a key', 'key': existing['key']}), 400
+    
+    # Generate new key
+    key = generate_key()
+    if not db.generate_key_entry(key, session.get('user_id', 'admin')):
+        return jsonify({'error': 'Failed to generate key'}), 500
+    
+    # Register user
+    db.register_user(discord_id, key)
+    db.mark_key_redeemed(key, discord_id)
+    db.log_event('whitelist', discord_id, request.remote_addr, f'Whitelisted via web by {session.get("user_id")}')
+    
+    return jsonify({'success': True, 'key': key, 'discord_id': discord_id})
+
+@app.route('/api/admin/unwhitelist', methods=['POST'])
+@require_admin
+def api_unwhitelist_user():
+    """Remove user from whitelist."""
+    data = request.get_json()
+    discord_id = data.get('discord_id', '').strip()
+    
+    if not discord_id:
+        return jsonify({'error': 'Discord ID required'}), 400
+    
+    success = db.unwhitelist(discord_id)
+    if success:
+        db.log_event('unwhitelist', discord_id, request.remote_addr, f'Unwhitelisted via web')
+        return jsonify({'success': True})
+    
+    return jsonify({'error': 'User not found'}), 404
+
+@app.route('/api/admin/blacklist', methods=['POST'])
+@require_admin
+def api_blacklist_user():
+    """Blacklist or unblacklist a user."""
+    data = request.get_json()
+    discord_id = data.get('discord_id', '').strip()
+    reason = data.get('reason', 'No reason provided')
+    
+    if not discord_id:
+        return jsonify({'error': 'Discord ID required'}), 400
+    
+    # Toggle blacklist
+    is_banned = db.toggle_blacklist(discord_id, reason)
+    action = 'blacklist' if is_banned else 'unblacklist'
+    
+    db.log_event(action, discord_id, request.remote_addr, f'{action.title()}ed via web: {reason}')
+    
+    return jsonify({'success': True, 'banned': is_banned, 'action': action})
+
+@app.route('/api/admin/reset-hwid', methods=['POST'])
+@require_admin
+def api_admin_reset_hwid():
+    """Force reset user HWID."""
+    data = request.get_json()
+    discord_id = data.get('discord_id', '').strip()
+    
+    if not discord_id:
+        return jsonify({'error': 'Discord ID required'}), 400
+    
+    success = db.reset_hwid(discord_id)
+    if success:
+        db.log_event('hwid_reset', discord_id, request.remote_addr, f'Force reset via web by admin')
+        return jsonify({'success': True})
+    
+    return jsonify({'error': 'User not found'}), 404
+
+@app.route('/api/admin/activity')
+@require_admin
+def api_admin_activity():
+    """Get filtered activity logs."""
+    event_type = request.args.get('event_type', 'all')
+    limit = int(request.args.get('limit', 50))
+    
+    activity = get_all_recent_activity(event_type, limit)
+    return jsonify({'activity': activity})
+
+@app.route('/api/admin/stats')
+@require_admin
+def api_admin_stats():
+    """Get system statistics."""
+    stats = db.get_stats()
+    
+    # Add more detailed stats
+    users = db.get_all_users()
+    blacklisted = db.get_blacklisted_users()
+    
+    stats['total_blacklisted'] = len(blacklisted)
+    stats['active_users'] = len(users) - len(blacklisted)
+    
+    return jsonify(stats)
+
+@app.route('/api/admin/backup', methods=['POST'])
+@require_admin
+def api_create_backup():
+    """Create database backup."""
+    try:
+        backup_path = db.create_backup()
+        db.log_event('backup', session.get('user_id'), request.remote_addr, f'Backup created: {backup_path}')
+        return jsonify({'success': True, 'path': backup_path})
+    except Exception as e:
+        log.error(f"Backup failed: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ==============================================================================
+# 📜 SCRIPT ROUTE
+# ==============================================================================
 
 @app.route('/script.lua')
 def get_script():
-    """Serve the Roblox script file."""
-    try:
-        if os.path.exists(Config.SCRIPT_FILE):
-            return send_file(Config.SCRIPT_FILE, mimetype='text/plain')
-        else:
-            log.error(f"Script file not found: {Config.SCRIPT_FILE}")
-            return "-- Script file not found", 404
-    except Exception as e:
-        log.error(f"Error serving script: {e}")
-        return f"-- Error loading script: {e}", 500
-
-
-# ==============================================================================
-# 🔐 AUTHENTICATION API
-# ==============================================================================
-
-@app.route('/api/auth/login', methods=['POST'])
-def auth_login():
-    """Authenticate user with Discord ID and key."""
-    try:
-        data = request.get_json() or {}
-        uid = str(data.get('uid', '')).strip()
-        key = str(data.get('key', '')).strip().upper()
-        
-        if not uid or not key:
-            return jsonify({
-                "success": False,
-                "message": "Missing Discord ID or key"
-            }), 400
-        
-        if not validate_discord_id(uid):
-            return jsonify({
-                "success": False,
-                "message": "Invalid Discord ID format"
-            }), 400
-        
-        # Check if blacklisted
-        if db.is_blacklisted(uid):
-            return jsonify({
-                "success": False,
-                "message": "Account is blacklisted"
-            }), 403
-        
-        # Get user
-        user = db.get_user(uid)
-        if not user:
-            return jsonify({
-                "success": False,
-                "message": "Invalid credentials"
-            }), 401
-        
-        # Verify key
-        if user.get('key') != key:
-            return jsonify({
-                "success": False,
-                "message": "Invalid credentials"
-            }), 401
-        
-        # Update last login
-        try:
-            db.update_last_login(uid, request.remote_addr)
-        except:
-            pass
-        
-        log.info(f"✅ User login: {uid}")
-        
-        return jsonify({
-            "success": True,
-            "message": "Login successful",
-            "user": {
-                "discord_id": uid,
-                "key": key
-            }
-        })
-        
-    except Exception as e:
-        log.error(f"Login error: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": "Server error"
-        }), 500
-
-
-@app.route('/api/auth/redeem', methods=['POST'])
-def auth_redeem():
-    """Redeem a license key."""
-    try:
-        data = request.get_json() or {}
-        uid = str(data.get('uid', '')).strip()
-        key = str(data.get('key', '')).strip().upper()
-        
-        if not uid or not key:
-            return jsonify({
-                "success": False,
-                "message": "Missing Discord ID or key"
-            }), 400
-        
-        if not validate_discord_id(uid):
-            return jsonify({
-                "success": False,
-                "message": "Invalid Discord ID"
-            }), 400
-        
-        if not validate_key_format(key):
-            return jsonify({
-                "success": False,
-                "message": "Invalid key format"
-            }), 400
-        
-        # Check if key is available
-        if not db.check_key_available(key):
-            return jsonify({
-                "success": False,
-                "message": "Key is invalid or already used"
-            }), 400
-        
-        # Check if user already has a key
-        existing = db.get_user(uid)
-        if existing and existing.get('key'):
-            return jsonify({
-                "success": False,
-                "message": "You already have an active key"
-            }), 400
-        
-        # Redeem key
-        try:
-            db.register_user(uid, key)
-            db.mark_key_redeemed(key, uid)
-            db.log_event("key_redeemed", uid, request.remote_addr, f"Redeemed {key}")
-        except Exception as e:
-            log.error(f"Error redeeming key: {e}")
-            return jsonify({
-                "success": False,
-                "message": "Failed to redeem key"
-            }), 500
-        
-        log.info(f"✅ Key redeemed: {key} by user {uid}")
-        
-        return jsonify({
-            "success": True,
-            "status": "ok",
-            "message": "Key redeemed successfully"
-        })
-        
-    except Exception as e:
-        log.error(f"Redeem error: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": "Server error"
-        }), 500
-
-
-@app.route('/api/auth/user_data', methods=['POST'])
-def auth_user_data():
-    """Get user dashboard data."""
-    try:
-        data = request.get_json() or {}
-        uid = str(data.get('uid', '')).strip()
-        key = str(data.get('key', '')).strip().upper()
-        
-        if not uid or not key:
-            return jsonify({
-                "success": False,
-                "message": "Missing credentials"
-            }), 400
-        
-        # Get user
-        user = db.get_user(uid)
-        if not user or user.get('key') != key:
-            return jsonify({
-                "success": False,
-                "message": "Invalid credentials"
-            }), 401
-        
-        # Get login count
-        login_count = 0
-        try:
-            conn = db.get_connection()
-            cur = conn.cursor()
-            cur.execute(
-                "SELECT COUNT(*) FROM analytics WHERE discord_id = ? AND event_type = 'login'",
-                (uid,)
-            )
-            login_count = cur.fetchone()[0]
-            conn.close()
-        except Exception as e:
-            log.error(f"Error getting login count: {e}")
-        
-        # Generate loader script
-        loader_script = f"""-- 🍌 BANANA HUB ENTERPRISE LOADER
--- Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC
--- User: {uid}
-
-getgenv().BananaKey = "{key}"
-getgenv().BananaID = "{uid}"
-loadstring(game:HttpGet("{Config.BASE_URL}/script.lua"))()
-"""
-        
-        return jsonify({
-            "success": True,
-            "user": {
-                "discord_id": uid,
-                "key": key,
-                "hwid": user.get('hwid'),
-                "hwid_set": bool(user.get('hwid')),
-                "joined_at": user.get('joined_at'),
-                "last_login": user.get('last_login'),
-                "login_count": login_count
-            },
-            "script": loader_script
-        })
-        
-    except Exception as e:
-        log.error(f"User data error: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": "Server error"
-        }), 500
-
-
-@app.route('/api/reset', methods=['POST'])
-def reset_hwid():
-    """Reset user's HWID."""
-    try:
-        data = request.get_json() or {}
-        uid = str(data.get('uid', '')).strip()
-        
-        if not uid:
-            return jsonify({
-                "success": False,
-                "message": "Missing Discord ID"
-            }), 400
-        
-        success = db.reset_hwid(uid)
-        
-        if success:
-            db.log_event("hwid_reset", uid, request.remote_addr, "User reset via web")
-            log.info(f"🔄 HWID reset for user {uid}")
-            
-            return jsonify({
-                "success": True,
-                "message": "HWID reset successfully"
-            })
-        else:
-            return jsonify({
-                "success": False,
-                "message": "User not found"
-            }), 404
-            
-    except Exception as e:
-        log.error(f"HWID reset error: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": "Server error"
-        }), 500
-
-
-# ==============================================================================
-# 🛡️ ADMIN API ENDPOINTS
-# ==============================================================================
-
-@app.route('/api/admin/genkey', methods=['POST'])
-@require_api_key
-def admin_genkey():
-    """Generate new license keys (admin only)."""
-    try:
-        data = request.get_json() or {}
-        amount = int(data.get('amount', 1))
-        
-        if amount < 1 or amount > 25:
-            return jsonify({
-                "success": False,
-                "message": "Amount must be between 1 and 25"
-            }), 400
-        
-        keys = []
-        import secrets
-        import string
-        
-        for _ in range(amount):
-            # Generate key
-            alphabet = string.ascii_uppercase + string.digits
-            body = ''.join(secrets.choice(alphabet) for _ in range(12))
-            key = f"BANANA-{body}"
-            
-            if db.generate_key_entry(key, "admin"):
-                keys.append(key)
-        
-        log.info(f"🔑 Admin generated {len(keys)} keys")
-        
-        return jsonify({
-            "success": True,
-            "message": f"Generated {len(keys)} keys",
-            "data": {
-                "keys": keys,
-                "count": len(keys)
-            }
-        })
-        
-    except Exception as e:
-        log.error(f"Key generation error: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": "Server error"
-        }), 500
-
-
-@app.route('/api/admin/keys', methods=['GET'])
-@require_api_key
-def admin_keys():
-    """Get all license keys (admin only)."""
-    try:
-        unused_only = request.args.get('unused_only', 'false').lower() == 'true'
-        
-        conn = db.get_connection()
-        cur = conn.cursor()
-        
-        if unused_only:
-            cur.execute("SELECT * FROM keys WHERE used = 0 ORDER BY created_at DESC")
-        else:
-            cur.execute("SELECT * FROM keys ORDER BY created_at DESC")
-        
-        keys = []
-        for row in cur.fetchall():
-            keys.append({
-                "key": row['key'],
-                "created_by": row['created_by'],
-                "created_at": row['created_at'],
-                "used": bool(row['used']),
-                "used_by": row['used_by'],
-                "used_at": row['used_at']
-            })
-        
-        conn.close()
-        
-        return jsonify({
-            "success": True,
-            "keys": keys,
-            "count": len(keys)
-        })
-        
-    except Exception as e:
-        log.error(f"Error fetching keys: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": "Server error"
-        }), 500
-
-
-@app.route('/api/admin/users', methods=['GET'])
-@require_api_key
-def admin_users():
-    """Get all users (admin only)."""
-    try:
-        conn = db.get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM users ORDER BY joined_at DESC")
-        
-        users = []
-        for row in cur.fetchall():
-            users.append({
-                "discord_id": row['discord_id'],
-                "key": row['key'],
-                "hwid": row['hwid'],
-                "joined_at": row['joined_at'],
-                "last_login": row['last_login']
-            })
-        
-        conn.close()
-        
-        return jsonify({
-            "success": True,
-            "users": users,
-            "count": len(users)
-        })
-        
-    except Exception as e:
-        log.error(f"Error fetching users: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": "Server error"
-        }), 500
-
-
-@app.route('/api/admin/lookup', methods=['GET'])
-@require_api_key
-def admin_lookup():
-    """Lookup user by Discord ID (admin only)."""
-    try:
-        discord_id = request.args.get('discord_id', '').strip()
-        
-        if not discord_id:
-            return jsonify({
-                "success": False,
-                "message": "Missing discord_id parameter"
-            }), 400
-        
-        user = db.get_user(discord_id)
-        if not user:
-            return jsonify({
-                "success": False,
-                "message": "User not found"
-            }), 404
-        
-        # Get analytics
-        login_count = 0
-        reset_count = 0
-        try:
-            conn = db.get_connection()
-            cur = conn.cursor()
-            
-            cur.execute(
-                "SELECT COUNT(*) FROM analytics WHERE discord_id = ? AND event_type = 'login'",
-                (discord_id,)
-            )
-            login_count = cur.fetchone()[0]
-            
-            cur.execute(
-                "SELECT COUNT(*) FROM analytics WHERE discord_id = ? AND event_type = 'hwid_reset'",
-                (discord_id,)
-            )
-            reset_count = cur.fetchone()[0]
-            
-            conn.close()
-        except Exception as e:
-            log.error(f"Error fetching analytics: {e}")
-        
-        is_blacklisted = db.is_blacklisted(discord_id)
-        
-        return jsonify({
-            "success": True,
-            "user": user,
-            "analytics": {
-                "login_count": login_count,
-                "reset_count": reset_count
-            },
-            "is_blacklisted": is_blacklisted
-        })
-        
-    except Exception as e:
-        log.error(f"Lookup error: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": "Server error"
-        }), 500
-
-
-@app.route('/api/admin/blacklist', methods=['GET'])
-@require_api_key
-def admin_blacklist():
-    """Get all blacklisted users (admin only)."""
-    try:
-        conn = db.get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM blacklist ORDER BY banned_at DESC")
-        
-        blacklisted = []
-        for row in cur.fetchall():
-            blacklisted.append({
-                "discord_id": row['discord_id'],
-                "reason": row['reason'],
-                "banned_at": row['banned_at'],
-                "banned_by": None
-            })
-        
-        conn.close()
-        
-        return jsonify({
-            "success": True,
-            "blacklisted": blacklisted,
-            "count": len(blacklisted)
-        })
-        
-    except Exception as e:
-        log.error(f"Error fetching blacklist: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": "Server error"
-        }), 500
-
-
-@app.route('/api/admin/reset-hwid', methods=['POST'])
-@require_api_key
-def admin_reset_hwid():
-    """Force reset user HWID (admin only)."""
-    try:
-        data = request.get_json() or {}
-        discord_id = str(data.get('discord_id', '')).strip()
-        
-        if not discord_id:
-            return jsonify({
-                "success": False,
-                "message": "Missing discord_id"
-            }), 400
-        
-        success = db.reset_hwid(discord_id)
-        
-        if success:
-            db.log_event("hwid_reset", discord_id, request.remote_addr, "Admin force reset")
-            log.info(f"🔄 Admin force reset HWID for {discord_id}")
-            
-            return jsonify({
-                "success": True,
-                "message": "HWID reset successfully"
-            })
-        else:
-            return jsonify({
-                "success": False,
-                "message": "User not found"
-            }), 404
-            
-    except Exception as e:
-        log.error(f"Admin HWID reset error: {e}", exc_info=True)
-        return jsonify({
-            "success": False,
-            "message": "Server error"
-        }), 500
-
-
-# ==============================================================================
-# ❌ ERROR HANDLERS
-# ==============================================================================
-
-@app.errorhandler(404)
-def not_found(error):
-    """Handle 404 errors."""
-    return render_page(WebTemplates.ERROR_404), 404
-
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Handle 500 errors."""
-    log.error(f"500 error: {error}", exc_info=True)
-    return render_page(WebTemplates.ERROR_500), 500
-
-
-@app.errorhandler(Exception)
-def handle_exception(error):
-    """Handle uncaught exceptions."""
-    log.error(f"Unhandled exception: {error}", exc_info=True)
-    return render_page(WebTemplates.ERROR_500), 500
-
-
-# ==============================================================================
-# 🚀 SERVER RUNNER
-# ==============================================================================
-
-def run_server():
-    """Run the Flask web server."""
-    try:
-        log.info("=" * 60)
-        log.info("🌐 BANANA HUB WEB SERVER")
-        log.info("=" * 60)
-        log.info(f"Host: {Config.WEB_HOST}:{Config.WEB_PORT}")
-        log.info(f"Base URL: {Config.BASE_URL}")
-        log.info(f"Debug Mode: {Config.DEBUG}")
-        log.info("=" * 60)
-        
-        # Run server
-        app.run(
-            host=Config.WEB_HOST,
-            port=Config.WEB_PORT,
-            debug=Config.DEBUG,
-            use_reloader=False  # Disable reloader to prevent double initialization
-        )
-        
-    except Exception as e:
-        log.error(f"❌ Failed to start web server: {e}", exc_info=True)
-        raise
-
-
-if __name__ == "__main__":
-    run_server()
+    """Serve the loader

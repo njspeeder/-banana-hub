@@ -1,6 +1,6 @@
 # ==============================================================================
-# 🍌 BANANA HUB ENTERPRISE - WEB TEMPLATES v4.0 (MODERN SIDEBAR DESIGN)
-# Professional dashboard with sidebar navigation
+# 🍌 BANANA HUB ENTERPRISE - WEB TEMPLATES v4.0 (FULLY FIXED)
+# Modern sidebar design with corrected Jinja2 syntax
 # ==============================================================================
 
 from __future__ import annotations
@@ -511,7 +511,6 @@ BASE_HTML = """<!DOCTYPE html>
     {BODY_CONTENT}
     
     <script>
-        // Mobile menu toggle
         function toggleSidebar() {
             document.querySelector('.sidebar').classList.toggle('active');
         }
@@ -681,7 +680,7 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
         </a>
         
         <div class="user-profile">
-            <div class="user-avatar">{{ user.get('discord_id', 'U')[:1] }}</div>
+            <div class="user-avatar">{{ user.get('discord_id', 'U')[0]|upper }}</div>
             <div class="user-info">
                 <h4>{{ user.get('discord_id', 'User')[:12] }}...</h4>
                 <p>User Account</p>
@@ -931,15 +930,15 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
         
         <div class="nav-section">
             <div class="nav-section-title">Management</div>
-            <a href="#" onclick="generateKeys()" class="nav-item">
+            <a href="#" onclick="generateKeys(); return false;" class="nav-item">
                 <i class="fas fa-plus-circle"></i>
                 <span>Generate Keys</span>
             </a>
-            <a href="#" onclick="whitelistUser()" class="nav-item">
+            <a href="#" onclick="whitelistUser(); return false;" class="nav-item">
                 <i class="fas fa-user-plus"></i>
                 <span>Whitelist User</span>
             </a>
-            <a href="#" onclick="createBackup()" class="nav-item">
+            <a href="#" onclick="createBackup(); return false;" class="nav-item">
                 <i class="fas fa-database"></i>
                 <span>Backup</span>
             </a>
@@ -1049,7 +1048,7 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                     </thead>
                     <tbody id="usersTable">
                         {% for user in users[:20] %}
-                        <tr>
+                        <tr data-user-id="{{ user.get('discord_id', '') }}">
                             <td>
                                 <span style="background: rgba(124, 58, 237, 0.1); padding: 0.375rem 0.625rem; border-radius: 6px; color: var(--primary-light); font-family: monospace; font-size: 0.813rem;">
                                     {{ user.get('discord_id', '')[:16] }}
@@ -1062,17 +1061,20 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             </td>
                             <td>
                                 <span style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted);">
-                                    {{ (user.get('hwid', 'Not set')[:12] + '...') if user.get('hwid') and (user.get('hwid')|length) > 12 else user.get('hwid', 'Not set') }}
+                                    {% if user.get('hwid') %}
+                                        {% if user.get('hwid')|length > 12 %}
+                                            {{ user.get('hwid')[:12] }}...
+                                        {% else %}
+                                            {{ user.get('hwid') }}
+                                        {% endif %}
+                                    {% else %}
+                                        Not set
+                                    {% endif %}
                                 </span>
                             </td>
                             <td style="font-size: 0.813rem; color: var(--text-muted);">{{ user.get('joined_at', 'Unknown')[:10] }}</td>
                             <td>
-                                {% set is_banned = user.get('discord_id') in [b.get('discord_id') for b in blacklisted] %}
-                                {% if is_banned %}
-                                <span class="badge badge-error"><i class="fas fa-ban"></i> Banned</span>
-                                {% else %}
-                                <span class="badge badge-success"><i class="fas fa-check"></i> Active</span>
-                                {% endif %}
+                                <span class="badge badge-success user-status" data-status="active"><i class="fas fa-check"></i> Active</span>
                             </td>
                             <td>
                                 <button onclick="manageUser('{{ user.get('discord_id', '') }}')" class="btn btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.75rem;">
@@ -1129,6 +1131,22 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
 </main>
 
 <script>
+    // Mark banned users on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const blacklistedIds = {{ blacklisted|map(attribute='discord_id')|list|tojson }};
+        
+        document.querySelectorAll('[data-user-id]').forEach(row => {
+            const userId = row.getAttribute('data-user-id');
+            const statusBadge = row.querySelector('.user-status');
+            
+            if (blacklistedIds.includes(userId)) {
+                statusBadge.className = 'badge badge-error user-status';
+                statusBadge.innerHTML = '<i class="fas fa-ban"></i> Banned';
+                statusBadge.setAttribute('data-status', 'banned');
+            }
+        });
+    });
+    
     function searchUsers() {
         const input = document.getElementById('userSearch');
         const filter = input.value.toUpperCase();
@@ -1290,3 +1308,6 @@ TEMPLATES = {
     'dashboard': DASHBOARD_PAGE,
     'admin': ADMIN_PAGE,
 }
+
+# Export for use in website_server.py
+__all__ = ['TEMPLATES']

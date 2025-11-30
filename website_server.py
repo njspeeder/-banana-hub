@@ -1,6 +1,6 @@
 # ==============================================================================
-# 🍌 BANANA HUB ENTERPRISE - WEBSITE SERVER v4.0 (MODERN SIDEBAR DESIGN)
-# Modern Flask web server with sidebar navigation and professional UI
+# 🍌 BANANA HUB ENTERPRISE - WEBSITE SERVER v5.0
+# Complete Flask server for modern multi-page dashboard and admin panel
 # ==============================================================================
 
 from __future__ import annotations
@@ -67,7 +67,7 @@ def require_admin(f):
         is_api_admin = api_key == Config.ADMIN_API_KEY
         
         if not (is_session_admin or is_api_admin):
-            return jsonify({'error': 'Unauthorized'}), 403
+            return jsonify({'error': 'Unauthorized - Admin access required'}), 403
         
         return f(*args, **kwargs)
     return decorated_function
@@ -86,7 +86,7 @@ def generate_loader_script(user_id: str, key: str) -> str:
     """Generate Lua loader script for user."""
     website_url = getattr(Config, 'WEBSITE_URL', 'https://banana-hub.onrender.com')
     
-    return f"""-- 🍌 BANANA HUB LOADER
+    return f"""-- 🍌 BANANA HUB ENTERPRISE LOADER
 -- User: {user_id}
 -- Key: {key}
 -- Generated: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}
@@ -99,92 +99,117 @@ local USER_ID = "{user_id}"
 local KEY = "{key}"
 
 print("🍌 Banana Hub - Initializing...")
-print("👤 User: " .. USER_ID)
+print("👤 User ID: " .. USER_ID)
 
--- Load main script
-local function loadMain()
+-- Authentication & Script Loading
+local function authenticateAndLoad()
     local success, result = pcall(function()
-        return game:HttpGet(WEBSITE_URL .. "/main.lua?user_id=" .. USER_ID .. "&key=" .. KEY)
+        return game:HttpGet(WEBSITE_URL .. "/script.lua?user_id=" .. USER_ID .. "&key=" .. KEY)
     end)
     
     if success then
-        print("✅ Authenticated successfully!")
+        print("✅ Authentication successful!")
+        print("🚀 Loading Banana Hub...")
         loadstring(result)()
     else
-        warn("❌ Failed to load: " .. tostring(result))
+        warn("❌ Authentication failed: " .. tostring(result))
+        warn("💡 Please verify your license key and internet connection")
     end
 end
 
-loadMain()
+authenticateAndLoad()
 """
 
 
-def safe_get_user_analytics(user_id: str) -> Dict:
-    """Get user analytics safely with fallback."""
+def safe_get_user_data(user_id: str) -> Dict[str, Any]:
+    """Get user data safely with comprehensive defaults."""
     try:
         user = db.get_user(user_id)
-        if not user:
-            return {'total_logins': 0, 'last_login': 'Never'}
+        
+        if not user or not isinstance(user, dict):
+            return {
+                'discord_id': user_id or 'Unknown',
+                'key': 'No key',
+                'hwid': '',
+                'last_login': 'Never',
+                'joined_at': 'Unknown',
+                'login_count': 0
+            }
         
         return {
-            'total_logins': user.get('login_count', 0),
-            'last_login': user.get('last_login', 'Never'),
+            'discord_id': user.get('discord_id') or user_id or 'Unknown',
+            'key': user.get('key') or 'No key',
+            'hwid': user.get('hwid') or '',
+            'last_login': user.get('last_login') or 'Never',
+            'joined_at': user.get('joined_at') or 'Unknown',
+            'login_count': user.get('login_count') or 0
         }
     except Exception as e:
+        log.error(f"Error getting user data for {user_id}: {e}")
+        return {
+            'discord_id': user_id or 'Unknown',
+            'key': 'Error',
+            'hwid': '',
+            'last_login': 'Never',
+            'joined_at': 'Unknown',
+            'login_count': 0
+        }
+
+
+def safe_get_user_analytics(user_id: str) -> Dict[str, Any]:
+    """Get user analytics safely with fallback."""
+    default_analytics = {
+        'total_logins': 0,
+        'last_login': 'Never'
+    }
+    
+    try:
+        if not user_id:
+            return default_analytics
+            
+        user = db.get_user(user_id)
+        
+        if not user or not isinstance(user, dict):
+            return default_analytics
+        
+        return {
+            'total_logins': int(user.get('login_count', 0) or 0),
+            'last_login': str(user.get('last_login', 'Never') or 'Never'),
+        }
+        
+    except Exception as e:
         log.warning(f"Analytics error for {user_id}: {e}")
-        return {'total_logins': 0, 'last_login': 'Never'}
+        return default_analytics
 
 
-def get_user_recent_activity(user_id: str, event_type: str = 'all', limit: int = 10) -> List[Dict]:
-    """Get recent activity for a user."""
+def get_system_stats() -> Dict[str, int]:
+    """Get comprehensive system statistics."""
     try:
-        if hasattr(db, 'get_user_logs'):
-            logs = db.get_user_logs(user_id, limit * 2)
-            if logs and event_type != 'all':
-                logs = [log for log in logs if log.get('event_type') == event_type]
-            return logs[:limit] if logs else []
+        users = db.get_all_users() or []
+        all_keys = db.get_all_keys() or []
+        blacklisted = db.get_blacklisted_users() or []
+        
+        unused_keys = [k for k in all_keys if k.get('used') == 0]
+        total_logins = sum(u.get('login_count', 0) for u in users)
+        
+        return {
+            'total_users': len(users),
+            'total_keys': len(all_keys),
+            'available_keys': len(unused_keys),
+            'total_logins': total_logins,
+            'total_blacklisted': len(blacklisted),
+            'active_users': len(users) - len(blacklisted)
+        }
     except Exception as e:
-        log.warning(f"Activity fetch error: {e}")
-    return []
-
-
-def get_all_recent_activity(event_type: str = 'all', limit: int = 50) -> List[Dict]:
-    """Get all recent activity."""
-    try:
-        if hasattr(db, 'get_all_logs'):
-            logs = db.get_all_logs(limit * 2)
-            if logs and event_type != 'all':
-                logs = [log for log in logs if log.get('event_type') == event_type]
-            return logs[:limit] if logs else []
-    except Exception as e:
-        log.warning(f"All activity fetch error: {e}")
-    return []
-
-
-def get_hwid_reset_history(limit: int = 20) -> List[Dict]:
-    """Get HWID reset history."""
-    try:
-        if hasattr(db, 'get_all_logs'):
-            logs = db.get_all_logs(limit * 5)
-            if logs:
-                hwid_logs = [log for log in logs if log.get('event_type') == 'hwid_reset']
-                return hwid_logs[:limit] if hwid_logs else []
-    except Exception as e:
-        log.warning(f"HWID history fetch error: {e}")
-    return []
-
-
-def get_recent_logins(limit: int = 20) -> List[Dict]:
-    """Get recent login history."""
-    try:
-        if hasattr(db, 'get_all_logs'):
-            logs = db.get_all_logs(limit * 3)
-            if logs:
-                login_logs = [log for log in logs if log.get('event_type') in ['web_login', 'login']]
-                return login_logs[:limit] if login_logs else []
-    except Exception as e:
-        log.warning(f"Login history fetch error: {e}")
-    return []
+        log.error(f"Error getting system stats: {e}")
+        return {
+            'total_users': 0,
+            'total_keys': 0,
+            'available_keys': 0,
+            'total_logins': 0,
+            'total_blacklisted': 0,
+            'active_users': 0
+        }
 
 # ==============================================================================
 # 🏠 PUBLIC ROUTES
@@ -192,17 +217,17 @@ def get_recent_logins(limit: int = 20) -> List[Dict]:
 
 @app.route('/')
 def index():
-    """Landing page."""
+    """Landing page with modern design."""
     try:
         return render_template_string(TEMPLATES['landing'])
     except Exception as e:
-        log.error(f"Landing page error: {e}")
-        return f"<h1>Error loading page</h1><pre>{str(e)}</pre>", 500
+        log.error(f"Landing page error: {e}", exc_info=True)
+        return f"<h1>Error Loading Page</h1><pre>{str(e)}</pre>", 500
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """User login page."""
+    """User login page and authentication handler."""
     if request.method == 'POST':
         try:
             data = request.get_json() if request.is_json else request.form
@@ -215,20 +240,23 @@ def login():
             # Verify user
             user = db.get_user(user_id)
             if not user:
+                log.warning(f"Login attempt for non-existent user: {user_id}")
                 return jsonify({'error': 'Invalid credentials'}), 401
             
             user_key = user.get('key', '').upper()
             if user_key != key:
+                log.warning(f"Invalid key attempt for user: {user_id}")
                 return jsonify({'error': 'Invalid credentials'}), 401
             
             # Check blacklist
             if db.is_blacklisted(user_id):
+                log.warning(f"Blacklisted user login attempt: {user_id}")
                 return jsonify({'error': 'Account banned'}), 403
             
-            # Prevent session fixation - clear and regenerate session
+            # Clear old session and create new one
             session.clear()
             
-            # Set session
+            # Set session data
             session['user_id'] = user_id
             session['key'] = key
             session.permanent = True
@@ -242,12 +270,14 @@ def login():
             
             # Log login
             try:
-                db.log_event('web_login', user_id, request.remote_addr, 'Web login')
+                db.log_event('web_login', user_id, request.remote_addr, 'Web panel login')
             except Exception as e:
-                log.warning(f"Failed to log login: {e}")
+                log.warning(f"Failed to log login event: {e}")
             
-            # Return redirect URL
-            redirect_url = url_for('admin_panel' if session['is_admin'] else 'dashboard')
+            # Return appropriate redirect
+            redirect_url = '/admin' if session['is_admin'] else '/dashboard'
+            
+            log.info(f"Successful login: {user_id} (Admin: {session['is_admin']})")
             
             return jsonify({
                 'success': True,
@@ -255,53 +285,55 @@ def login():
             })
             
         except Exception as e:
-            log.error(f"Login error: {e}")
+            log.error(f"Login error: {e}", exc_info=True)
             return jsonify({'error': 'Login failed', 'details': str(e)}), 500
     
     # GET request - show login form
     try:
         return render_template_string(TEMPLATES['login'])
     except Exception as e:
-        log.error(f"Login page error: {e}")
-        return f"<h1>Error loading login</h1><pre>{str(e)}</pre>", 500
+        log.error(f"Login page error: {e}", exc_info=True)
+        return f"<h1>Error Loading Login</h1><pre>{str(e)}</pre>", 500
 
 
 @app.route('/logout')
 def logout():
-    """Logout user."""
+    """Logout user and clear session."""
+    user_id = session.get('user_id', 'Unknown')
     session.clear()
+    log.info(f"User logged out: {user_id}")
     return redirect(url_for('index'))
 
 # ==============================================================================
-# 👤 USER DASHBOARD
+# 👤 USER DASHBOARD ROUTES
 # ==============================================================================
 
 @app.route('/dashboard')
+@app.route('/dashboard/')
+@app.route('/dashboard/<page>')
 @require_auth
-def dashboard():
-    """User dashboard with sidebar."""
+def dashboard(page='overview'):
+    """User dashboard with multi-page navigation."""
     try:
         user_id = session.get('user_id')
-        user = db.get_user(user_id)
-        
-        if not user:
+        if not user_id:
             session.clear()
             return redirect(url_for('login'))
         
-        # Gather all required data
+        # Get user data
+        user_data = safe_get_user_data(user_id)
         analytics = safe_get_user_analytics(user_id)
-        loader_script = generate_loader_script(user_id, user.get('key', ''))
-        recent_activity = get_user_recent_activity(user_id, limit=10)
         
-        # Prepare user data with safe defaults
-        user_data = {
-            'discord_id': user.get('discord_id', user_id),
-            'key': user.get('key', 'No key'),
-            'hwid': user.get('hwid', ''),
-            'last_login': user.get('last_login', 'Never'),
-            'joined_at': user.get('joined_at', 'Unknown'),
-            'login_count': user.get('login_count', 0)
-        }
+        # Generate loader script
+        try:
+            loader_script = generate_loader_script(user_id, user_data['key'])
+        except Exception as e:
+            log.warning(f"Loader script generation error: {e}")
+            loader_script = "-- Error generating loader script"
+        
+        # Get config URLs
+        base_url = getattr(Config, 'BASE_URL', '')
+        website_url = getattr(Config, 'WEBSITE_URL', 'https://banana-hub.onrender.com')
         
         # Render dashboard template
         return render_template_string(
@@ -309,15 +341,35 @@ def dashboard():
             user=user_data,
             analytics=analytics,
             loader_script=loader_script,
-            recent_activity=recent_activity,
-            base_url=getattr(Config, 'BASE_URL', ''),
-            website_url=getattr(Config, 'WEBSITE_URL', '')
+            base_url=base_url,
+            website_url=website_url
         )
         
     except Exception as e:
         log.error(f"Dashboard error: {e}", exc_info=True)
-        return f"<h1>Error Loading Dashboard</h1><pre>{str(e)}</pre>", 500
+        return f"""
+        <html>
+        <head>
+            <title>Dashboard Error</title>
+            <style>
+                body {{ font-family: monospace; padding: 2rem; background: #0A0E1A; color: #fff; }}
+                pre {{ background: #141824; padding: 1rem; border-radius: 8px; overflow-x: auto; }}
+                .error {{ color: #EF4444; }}
+                a {{ color: #FACC15; text-decoration: none; }}
+            </style>
+        </head>
+        <body>
+            <h1 class="error">Dashboard Error</h1>
+            <p>An error occurred while loading your dashboard.</p>
+            <pre>{str(e)}</pre>
+            <p><a href="/logout">← Logout and try again</a></p>
+        </body>
+        </html>
+        """, 500
 
+# ==============================================================================
+# 👤 USER API ENDPOINTS
+# ==============================================================================
 
 @app.route('/api/user/reset-hwid', methods=['POST'])
 @require_auth
@@ -332,6 +384,8 @@ def api_reset_hwid():
                 db.log_event('hwid_reset', user_id, request.remote_addr, 'Web HWID reset')
             except Exception:
                 pass
+            
+            log.info(f"HWID reset successful: {user_id}")
             return jsonify({'success': True, 'message': 'HWID reset successfully'})
         
         return jsonify({'success': False, 'error': 'Failed to reset HWID'}), 500
@@ -340,55 +394,30 @@ def api_reset_hwid():
         log.error(f"HWID reset error: {e}")
         return jsonify({'error': str(e)}), 500
 
-
-@app.route('/api/user/activity')
-@require_auth
-def api_user_activity():
-    """Get user activity."""
-    try:
-        user_id = session.get('user_id')
-        event_type = request.args.get('event_type', 'all')
-        limit = int(request.args.get('limit', 20))
-        
-        activity = get_user_recent_activity(user_id, event_type, limit)
-        return jsonify({'activity': activity})
-        
-    except Exception as e:
-        log.error(f"Activity API error: {e}")
-        return jsonify({'error': str(e)}), 500
-
 # ==============================================================================
-# 🛡️ ADMIN PANEL
+# 🛡️ ADMIN PANEL ROUTES
 # ==============================================================================
 
 @app.route('/admin')
+@app.route('/admin/')
+@app.route('/admin/<page>')
 @require_auth
 @require_admin
-def admin_panel():
-    """Admin panel with sidebar."""
+def admin_panel(page='dashboard'):
+    """Admin panel with multi-page navigation."""
     try:
-        # Gather all data safely
+        # Gather all required data
         users = db.get_all_users() or []
         all_keys = db.get_all_keys() or []
         unused_keys = [k for k in all_keys if k.get('used') == 0]
         blacklisted = db.get_blacklisted_users() or []
         
         # Calculate comprehensive stats
-        total_logins = sum(u.get('login_count', 0) for u in users)
+        stats = get_system_stats()
         
-        stats = {
-            'total_users': len(users),
-            'total_keys': len(all_keys),
-            'available_keys': len(unused_keys),
-            'total_logins': total_logins,
-            'total_blacklisted': len(blacklisted),
-            'active_users': len(users) - len(blacklisted)
-        }
-        
-        # Get activity logs safely
-        recent_activity = get_all_recent_activity(limit=50)
-        hwid_resets = get_hwid_reset_history(limit=20)
-        recent_logins = get_recent_logins(limit=20)
+        # Get config URLs
+        base_url = getattr(Config, 'BASE_URL', '')
+        website_url = getattr(Config, 'WEBSITE_URL', 'https://banana-hub.onrender.com')
         
         # Render admin template
         return render_template_string(
@@ -398,22 +427,40 @@ def admin_panel():
             all_keys=all_keys,
             blacklisted=blacklisted,
             stats=stats,
-            recent_activity=recent_activity,
-            hwid_resets=hwid_resets,
-            recent_logins=recent_logins,
-            base_url=getattr(Config, 'BASE_URL', ''),
-            website_url=getattr(Config, 'WEBSITE_URL', '')
+            base_url=base_url,
+            website_url=website_url
         )
         
     except Exception as e:
         log.error(f"Admin panel error: {e}", exc_info=True)
-        return f"<h1>Error Loading Admin Panel</h1><pre>{str(e)}</pre>", 500
+        return f"""
+        <html>
+        <head>
+            <title>Admin Error</title>
+            <style>
+                body {{ font-family: monospace; padding: 2rem; background: #0A0E1A; color: #fff; }}
+                pre {{ background: #141824; padding: 1rem; border-radius: 8px; overflow-x: auto; }}
+                .error {{ color: #EF4444; }}
+                a {{ color: #FACC15; text-decoration: none; }}
+            </style>
+        </head>
+        <body>
+            <h1 class="error">Admin Panel Error</h1>
+            <p>An error occurred while loading the admin panel.</p>
+            <pre>{str(e)}</pre>
+            <p><a href="/logout">← Logout and try again</a></p>
+        </body>
+        </html>
+        """, 500
 
+# ==============================================================================
+# 🛡️ ADMIN API ENDPOINTS
+# ==============================================================================
 
 @app.route('/api/admin/users')
 @require_admin
 def api_admin_users():
-    """Get all users with filtering."""
+    """Get all users with filtering and sorting."""
     try:
         users = db.get_all_users() or []
         
@@ -424,10 +471,12 @@ def api_admin_users():
         if search:
             users = [u for u in users if search in u.get('discord_id', '').lower() or search in u.get('key', '').lower()]
         
+        blacklisted_ids = [b.get('discord_id') for b in (db.get_blacklisted_users() or [])]
+        
         if status_filter == 'banned':
-            users = [u for u in users if db.is_blacklisted(u.get('discord_id'))]
+            users = [u for u in users if u.get('discord_id') in blacklisted_ids]
         elif status_filter == 'active':
-            users = [u for u in users if not db.is_blacklisted(u.get('discord_id'))]
+            users = [u for u in users if u.get('discord_id') not in blacklisted_ids]
         
         # Apply sorting
         sort_by = request.args.get('sort', 'joined_at')
@@ -438,52 +487,47 @@ def api_admin_users():
         except Exception:
             pass
         
-        return jsonify({'users': users})
+        return jsonify({'users': users, 'count': len(users)})
         
     except Exception as e:
         log.error(f"Users API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/admin/keys')
+@app.route('/api/admin/stats')
 @require_admin
-def api_admin_keys():
-    """Get all keys with filtering."""
+def api_admin_stats():
+    """Get system statistics."""
     try:
-        keys = db.get_all_keys() or []
-        
-        status_filter = request.args.get('status', 'all')
-        
-        if status_filter == 'unused':
-            keys = [k for k in keys if k.get('used') == 0]
-        elif status_filter == 'used':
-            keys = [k for k in keys if k.get('used') == 1]
-        
-        return jsonify({'keys': keys})
-        
+        stats = get_system_stats()
+        return jsonify(stats)
     except Exception as e:
-        log.error(f"Keys API error: {e}")
+        log.error(f"Stats API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/admin/generate-key', methods=['POST'])
 @require_admin
 def api_generate_key():
-    """Generate new keys."""
+    """Generate new license keys."""
     try:
         data = request.get_json() or {}
         count = min(int(data.get('count', 1)), 25)
         
         keys = []
+        admin_user = session.get('user_id', 'admin')
+        
         for _ in range(count):
             key = generate_key()
-            if db.generate_key_entry(key, session.get('user_id', 'admin')):
+            if db.generate_key_entry(key, admin_user):
                 keys.append(key)
         
         try:
-            db.log_event('key_generated', session.get('user_id'), request.remote_addr, f'Generated {len(keys)} keys')
+            db.log_event('key_generated', admin_user, request.remote_addr, f'Generated {len(keys)} keys')
         except Exception:
             pass
+        
+        log.info(f"Generated {len(keys)} keys by {admin_user}")
         
         return jsonify({'success': True, 'keys': keys, 'count': len(keys)})
         
@@ -495,7 +539,7 @@ def api_generate_key():
 @app.route('/api/admin/whitelist', methods=['POST'])
 @require_admin
 def api_whitelist_user():
-    """Whitelist a user."""
+    """Whitelist a user with auto-generated key."""
     try:
         data = request.get_json() or {}
         discord_id = data.get('discord_id', '').strip()
@@ -503,23 +547,27 @@ def api_whitelist_user():
         if not discord_id:
             return jsonify({'error': 'Discord ID required'}), 400
         
-        # Check if exists
+        # Check if user already exists
         existing = db.get_user(discord_id)
         if existing and existing.get('key'):
             return jsonify({'error': 'User already has a key', 'key': existing['key']}), 400
         
         # Generate and assign key
         key = generate_key()
-        if not db.generate_key_entry(key, session.get('user_id', 'admin')):
+        admin_user = session.get('user_id', 'admin')
+        
+        if not db.generate_key_entry(key, admin_user):
             return jsonify({'error': 'Failed to generate key'}), 500
         
         db.register_user(discord_id, key)
         db.mark_key_redeemed(key, discord_id)
         
         try:
-            db.log_event('whitelist', discord_id, request.remote_addr, f'Whitelisted by {session.get("user_id")}')
+            db.log_event('whitelist', discord_id, request.remote_addr, f'Whitelisted by {admin_user}')
         except Exception:
             pass
+        
+        log.info(f"User whitelisted: {discord_id} by {admin_user}")
         
         return jsonify({'success': True, 'key': key, 'discord_id': discord_id})
         
@@ -540,11 +588,14 @@ def api_unwhitelist_user():
             return jsonify({'error': 'Discord ID required'}), 400
         
         success = db.unwhitelist(discord_id)
+        
         if success:
             try:
-                db.log_event('unwhitelist', discord_id, request.remote_addr, 'Unwhitelisted via web')
+                db.log_event('unwhitelist', discord_id, request.remote_addr, f'Removed by {session.get("user_id")}')
             except Exception:
                 pass
+            
+            log.info(f"User unwhitelisted: {discord_id}")
             return jsonify({'success': True})
         
         return jsonify({'error': 'User not found'}), 404
@@ -574,6 +625,8 @@ def api_blacklist_user():
         except Exception:
             pass
         
+        log.info(f"User {action}ed: {discord_id} - {reason}")
+        
         return jsonify({'success': True, 'banned': is_banned, 'action': action})
         
     except Exception as e:
@@ -584,7 +637,7 @@ def api_blacklist_user():
 @app.route('/api/admin/reset-hwid', methods=['POST'])
 @require_admin
 def api_admin_reset_hwid():
-    """Force reset user HWID."""
+    """Force reset user HWID (admin)."""
     try:
         data = request.get_json() or {}
         discord_id = data.get('discord_id', '').strip()
@@ -593,11 +646,14 @@ def api_admin_reset_hwid():
             return jsonify({'error': 'Discord ID required'}), 400
         
         success = db.reset_hwid(discord_id)
+        
         if success:
             try:
-                db.log_event('hwid_reset', discord_id, request.remote_addr, 'Admin force reset')
+                db.log_event('hwid_reset', discord_id, request.remote_addr, f'Admin reset by {session.get("user_id")}')
             except Exception:
                 pass
+            
+            log.info(f"Admin HWID reset for: {discord_id}")
             return jsonify({'success': True})
         
         return jsonify({'error': 'User not found'}), 404
@@ -607,57 +663,20 @@ def api_admin_reset_hwid():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/admin/activity')
-@require_admin
-def api_admin_activity():
-    """Get filtered activity logs."""
-    try:
-        event_type = request.args.get('event_type', 'all')
-        limit = int(request.args.get('limit', 50))
-        
-        activity = get_all_recent_activity(event_type, limit)
-        return jsonify({'activity': activity})
-        
-    except Exception as e:
-        log.error(f"Activity API error: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/admin/stats')
-@require_admin
-def api_admin_stats():
-    """Get system statistics."""
-    try:
-        users = db.get_all_users() or []
-        blacklisted = db.get_blacklisted_users() or []
-        all_keys = db.get_all_keys() or []
-        
-        stats = {
-            'total_users': len(users),
-            'total_blacklisted': len(blacklisted),
-            'active_users': len(users) - len(blacklisted),
-            'total_keys': len(all_keys),
-            'available_keys': len([k for k in all_keys if k.get('used') == 0]),
-            'total_logins': sum(u.get('login_count', 0) for u in users)
-        }
-        
-        return jsonify(stats)
-        
-    except Exception as e:
-        log.error(f"Stats API error: {e}")
-        return jsonify({'error': str(e)}), 500
-
-
 @app.route('/api/admin/backup', methods=['POST'])
 @require_admin
 def api_create_backup():
     """Create database backup."""
     try:
         backup_path = db.create_backup()
+        
         try:
-            db.log_event('backup', session.get('user_id'), request.remote_addr, f'Backup: {backup_path}')
+            db.log_event('backup', session.get('user_id'), request.remote_addr, f'Backup created: {backup_path}')
         except Exception:
             pass
+        
+        log.info(f"Database backup created: {backup_path}")
+        
         return jsonify({'success': True, 'path': backup_path})
         
     except Exception as e:
@@ -665,28 +684,28 @@ def api_create_backup():
         return jsonify({'error': str(e)}), 500
 
 # ==============================================================================
-# 📜 SCRIPT ROUTES
+# 📜 SCRIPT SERVING ROUTES
 # ==============================================================================
 
 @app.route('/script.lua')
 def get_script():
-    """Serve the loader script."""
+    """Serve the loader script for authenticated users."""
     try:
         user_id = request.args.get('user_id', '')
         key = request.args.get('key', '')
         
         if not user_id or not key:
-            return "-- Error: Missing credentials", 400
+            return "-- Error: Missing authentication credentials", 400
         
         user = db.get_user(user_id)
         if not user or user.get('key', '').upper() != key.upper():
             return "-- Error: Invalid credentials", 401
         
         if db.is_blacklisted(user_id):
-            return "-- Error: Account banned", 403
+            return "-- Error: Account has been banned", 403
         
         try:
-            db.log_event('script_access', user_id, request.remote_addr, 'Loader accessed')
+            db.log_event('script_access', user_id, request.remote_addr, 'Loader script accessed')
         except Exception:
             pass
         
@@ -705,7 +724,7 @@ def get_script():
 
 @app.route('/main.lua')
 def get_main_script():
-    """Serve the main script."""
+    """Serve the main Banana Hub script."""
     try:
         user_id = request.args.get('user_id', '')
         key = request.args.get('key', '')
@@ -725,15 +744,40 @@ def get_main_script():
         except Exception:
             pass
         
-        main_script = f"""-- 🍌 BANANA HUB MAIN SCRIPT
-print("🍌 Banana Hub loaded successfully!")
-print("User ID: {user_id}")
-print("Authenticated: true")
+        # Main Banana Hub script
+        main_script = f"""-- 🍌 BANANA HUB ENTERPRISE - MAIN SCRIPT
+-- User: {user_id}
+-- Authenticated: true
+-- Loaded: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}
 
--- Your main script content here
--- Add your game-specific functionality below
+print("🍌 Banana Hub Enterprise loaded successfully!")
+print("✅ Authentication verified")
+print("👤 User ID: {user_id}")
 
-print("✅ Ready to use!")
+-- Game Detection
+local game_id = game.PlaceId
+print("🎮 Game ID: " .. tostring(game_id))
+
+-- Universal Features
+local function enableESP()
+    print("👁️ ESP enabled")
+end
+
+local function speedHack()
+    print("⚡ Speed hack activated")
+end
+
+-- Load game-specific scripts
+if game_id == 2788229376 then
+    print("🎯 Da Hood detected - Loading custom scripts")
+elseif game_id == 286090429 then
+    print("🏃 Arsenal detected - Loading custom scripts")
+else
+    print("🌐 Universal mode - Core features loaded")
+end
+
+print("✅ Banana Hub ready to use!")
+print("💡 Press INSERT to open GUI (coming soon)")
 """
         
         return app.response_class(
@@ -747,6 +791,84 @@ print("✅ Ready to use!")
         return f"-- Error: {str(e)}", 500
 
 # ==============================================================================
+# 🚀 ERROR HANDLERS
+# ==============================================================================
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 errors."""
+    return """
+    <html>
+    <head>
+        <title>404 - Page Not Found</title>
+        <style>
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+                padding: 4rem 2rem; 
+                background: #0A0E1A; 
+                color: #fff; 
+                text-align: center;
+            }
+            h1 { font-size: 4rem; color: #FACC15; margin-bottom: 1rem; }
+            p { font-size: 1.25rem; color: #9CA3AF; margin-bottom: 2rem; }
+            a { 
+                display: inline-block;
+                padding: 1rem 2rem; 
+                background: linear-gradient(135deg, #FACC15, #F59E0B); 
+                color: #0A0E1A; 
+                text-decoration: none; 
+                border-radius: 0.5rem; 
+                font-weight: 600;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>404</h1>
+        <p>Oops! The page you're looking for doesn't exist.</p>
+        <a href="/">← Back to Home</a>
+    </body>
+    </html>
+    """, 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors."""
+    log.error(f"Internal server error: {error}")
+    return """
+    <html>
+    <head>
+        <title>500 - Internal Server Error</title>
+        <style>
+            body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+                padding: 4rem 2rem; 
+                background: #0A0E1A; 
+                color: #fff; 
+                text-align: center;
+            }
+            h1 { font-size: 4rem; color: #EF4444; margin-bottom: 1rem; }
+            p { font-size: 1.25rem; color: #9CA3AF; margin-bottom: 2rem; }
+            a { 
+                display: inline-block;
+                padding: 1rem 2rem; 
+                background: linear-gradient(135deg, #FACC15, #F59E0B); 
+                color: #0A0E1A; 
+                text-decoration: none; 
+                border-radius: 0.5rem; 
+                font-weight: 600;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>500</h1>
+        <p>Something went wrong on our end. Please try again later.</p>
+        <a href="/">← Back to Home</a>
+    </body>
+    </html>
+    """, 500
+
+# ==============================================================================
 # 🚀 SERVER RUNNER
 # ==============================================================================
 
@@ -755,14 +877,16 @@ def run_server():
     port = int(os.getenv("PORT", 5000))
     debug_mode = os.getenv("FLASK_DEBUG", "False").lower() == "true"
     
-    log.info("=" * 60)
-    log.info("🍌 BANANA HUB ENTERPRISE - WEB SERVER")
-    log.info("=" * 60)
-    log.info(f"🌐 Starting server on port {port}")
-    log.info(f"🔗 Website: {getattr(Config, 'WEBSITE_URL', 'Not configured')}")
+    log.info("=" * 70)
+    log.info("🍌 BANANA HUB ENTERPRISE - WEB SERVER v5.0")
+    log.info("=" * 70)
+    log.info(f"🌐 Server Port: {port}")
+    log.info(f"🔗 Website URL: {getattr(Config, 'WEBSITE_URL', 'Not configured')}")
     log.info(f"🔗 Base URL: {getattr(Config, 'BASE_URL', 'Not configured')}")
     log.info(f"🔒 Debug Mode: {debug_mode}")
-    log.info("=" * 60)
+    log.info(f"👑 Admin: {getattr(Config, 'OWNER_ID', 'Not configured')}")
+    log.info("=" * 70)
+    log.info("✅ Server starting...")
     
     app.run(host='0.0.0.0', port=port, debug=debug_mode)
 

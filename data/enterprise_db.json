@@ -1,0 +1,33 @@
+{
+    "meta": {
+        "created_at": "2025-11-28 09:08:50.010763",
+        "version": "V80.0.1"
+    },
+    "stats": {
+        "total_executions": 0,
+        "total_keys_generated": 2,
+        "total_logins": 0
+    },
+    "users": {
+        "1242609091294003221": {
+            "key": "BANANA-63LGMFYM9CX8",
+            "hwid": null,
+            "joined_at": "2025-11-28 09:12:04.797006",
+            "last_login": "2025-11-28 09:12:26.965620",
+            "ip_history": []
+        }
+    },
+    "keys": {
+        "BANANA-63LGMFYM9CX8": {
+            "created_by": "1242609091294003221",
+            "created_at": "2025-11-28 09:11:47.113990",
+            "used": true,
+            "used_by": "1242609091294003221"
+        },
+        "BANANA-0NEZS2Z2W8FD": {
+            "created_by": "1242609091294003221",
+            "created_at": "2025-11-28 11:45:48.207957",
+            "used": false,
+            "used_by": null
+        }
+    },

@@ -20,8 +20,8 @@ from flask_cors import CORS
 # ⚙️ CONFIGURATION
 # ==============================================================================
 CONFIG = {
-    "TOKEN": "PASTE_YOUR_BOT_TOKEN_HERE", 
-    "OWNER_ID": 1242609091294003221,
+    "TOKEN": "MTQ0NjUyOTgxNzQzOTg5OTc1MA.GKv_XN.iGGQmSnfWVygNTT_qo9R3OIPnc3wFpHjIAKOhE", 
+    "OWNER_ID": 1269772767516033025,
     "PREFIX": "/",
     "DATA_DIR": "data",
     "DB_FILE": "platinum_db.json",

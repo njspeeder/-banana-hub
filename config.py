@@ -4,7 +4,7 @@ class Config:
     """Configuration for Banana Hub - Production Ready"""
     
     # ========== BOT SETTINGS ==========
-    BOT_TOKEN = os.getenv("BOT_TOKEN", "MTQ0MzYzODYyODgyMjU0ODUyMg.Gxoatx.e6QlfF592XZhkH4I6Sd2zbH2KESI1QkR80ejfg")
+    BOT_TOKEN = os.getenv("BOT_TOKEN", "MTQ0NjUyOTgxNzQzOTg5OTc1MA.GKv_XN.iGGQmSnfWVygNTT_qo9R3OIPnc3wFpHjIAKOhE")
     PREFIX = "!"
     
     # ========== WEB SETTINGS ==========

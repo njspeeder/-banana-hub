@@ -818,6 +818,8 @@ class UserCog(commands.Cog, name="User"):
     @app_commands.command(name="support", description="Get help and support information")
     async def support(self, interaction: discord.Interaction):
         """Show support information."""
+        await interaction.response.defer(ephemeral=True)
+        
         embed = create_embed("🆘 Support Center", "Need help? We've got you covered!")
         
         embed.add_field(name="📖 Common Issues", value="• **HWID Locked**: Use `/reset-hwid` (5min cooldown)\n• **Invalid Key**: Check format `BANANA-XXX-XXX-XXX`\n• **Script Error**: Make sure you're whitelisted", inline=False)
@@ -828,19 +830,21 @@ class UserCog(commands.Cog, name="User"):
         view.add_item(discord.ui.Button(label="📖 FAQ", style=discord.ButtonStyle.link, url=f"{Config.WEBSITE_URL}"))
         view.add_item(discord.ui.Button(label="🎫 Open Ticket", style=discord.ButtonStyle.primary, custom_id="open_ticket", disabled=True))
         
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
     @app_commands.command(name="report", description="Report a bug or issue")
     @app_commands.describe(issue="Describe the bug or issue you encountered")
     async def report(self, interaction: discord.Interaction, issue: str):
         """Submit a bug report."""
+        await interaction.response.defer(ephemeral=True)
+        
         db.log_event("bug_report", str(interaction.user.id), None, issue[:500])
         
         embed = create_embed("🐛 Bug Report Submitted", "Thank you for your report!", discord.Color.green())
         embed.add_field(name="📝 Your Report", value=f"```{issue[:200]}{'...' if len(issue) > 200 else ''}```", inline=False)
         embed.add_field(name="ℹ️ Next Steps", value="Our team will review your report. Major issues may result in a fix in future updates.", inline=False)
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
         
         # Log to console for admins
         log.info(f"📝 Bug Report from {interaction.user} ({interaction.user.id}): {issue[:100]}")
@@ -849,12 +853,14 @@ class UserCog(commands.Cog, name="User"):
     @app_commands.describe(feedback="Your feedback or suggestion")
     async def feedback(self, interaction: discord.Interaction, feedback: str):
         """Submit feedback."""
+        await interaction.response.defer(ephemeral=True)
+        
         db.log_event("feedback", str(interaction.user.id), None, feedback[:500])
         
         embed = create_embed("💡 Feedback Received", "Thank you for your input!", discord.Color.green())
         embed.add_field(name="📝 Your Feedback", value=f"```{feedback[:200]}{'...' if len(feedback) > 200 else ''}```", inline=False)
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
         log.info(f"💡 Feedback from {interaction.user} ({interaction.user.id}): {feedback[:100]}")
 
 

@@ -426,8 +426,10 @@ def admin_panel(page='dashboard'):
         return render_template_string(
             TEMPLATES['admin'],
             users=users,
+            recent_users=users[:20] if users else [],
             unused_keys=unused_keys,
             all_keys=all_keys,
+            recent_keys=all_keys[:20] if all_keys else [],
             blacklisted=blacklisted,
             stats=stats,
             base_url=base_url,

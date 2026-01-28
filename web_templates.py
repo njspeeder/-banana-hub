@@ -1129,7 +1129,7 @@ LOGIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                 
                 <div class="form-group">
                     <label class="form-label">License Key</label>
-                    <input type="password" id="key" name="key" class="form-input" placeholder="BH-XXXXXXXXXXXX" required>
+                    <input type="password" id="key" name="key" class="form-input" placeholder="BANANA-XXX-XXX-XXX" required>
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
                         <i class="fas fa-key"></i> Your Banana Hub license key
                     </p>
@@ -2488,7 +2488,7 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for user in users[:20] %}
+                                {% for user in recent_users %}
                                 <tr>
                                     <td style="font-family: monospace; font-size: 0.875rem;">{{ user.get('discord_id', 'Unknown')[:16] }}</td>
                                     <td style="font-family: monospace; font-size: 0.75rem;">{{ user.get('key', 'N/A')[:15] }}...</td>
@@ -2566,7 +2566,7 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for key in all_keys[:20] %}
+                                {% for key in recent_keys %}
                                 <tr>
                                     <td style="font-family: monospace; font-size: 0.875rem;">{{ key.get('key', 'N/A') }}</td>
                                     <td>

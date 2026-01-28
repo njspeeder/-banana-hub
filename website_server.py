@@ -511,6 +511,12 @@ def api_admin_stats():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/status', methods=['GET'])
+def api_status_check():
+    """Health check endpoint."""
+    return jsonify({'success': True, 'data': {'status': 'online'}})
+
+
 @app.route('/api/admin/generate-key', methods=['POST'])
 @app.route('/api/generate-key', methods=['POST'])
 @require_admin
@@ -645,6 +651,7 @@ def api_blacklist_user():
 
 @app.route('/api/admin/reset-hwid', methods=['POST'])
 @app.route('/api/reset-hwid-admin', methods=['POST'])
+@app.route('/api/user/reset-hwid', methods=['POST']) # fallback alias if routed purely by path
 @require_admin
 def api_admin_reset_hwid():
     """Force reset user HWID (admin)."""
@@ -670,6 +677,136 @@ def api_admin_reset_hwid():
         
     except Exception as e:
         log.error(f"Admin HWID reset error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/<user_id>', methods=['GET'])
+@require_admin
+def api_get_user_info(user_id):
+    """Get specific user info (Admin)."""
+    try:
+        user = safe_get_user_data(user_id)
+        if not user or user.get('discord_id') == 'Unknown':
+             # Even if unknown, return safe structure so client doesn't crash
+             return jsonify({'success': True, 'user': user})
+             
+        return jsonify({'success': True, 'user': user})
+    except Exception as e:
+        log.error(f"Get user info error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/<user_id>/reset-hwid', methods=['POST'])
+@require_admin
+def api_user_reset_hwid_endpoint(user_id):
+    """Reset specific user's HWID (Admin)."""
+    try:
+        if not user_id:
+             return jsonify({'error': 'User ID required'}), 400
+             
+        success = db.reset_hwid(user_id)
+        if success:
+             try:
+                 db.log_event('hwid_reset', user_id, request.remote_addr, f'Bot reset for {user_id}')
+             except: pass
+             return jsonify({'success': True, 'message': 'HWID reset successfully'})
+             
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+    except Exception as e:
+        log.error(f"User HWID reset error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/check-key', methods=['POST'])
+@require_admin
+def api_check_key():
+    """Check if a license key is valid and available."""
+    try:
+        data = request.get_json() or {}
+        key = data.get('key', '').strip().upper()
+        
+        if not key:
+            return jsonify({'success': False, 'error': 'Key required'}), 400
+            
+        is_available = db.check_key_available(key)
+        
+        return jsonify({
+            'success': True,
+            'key': key,
+            'available': is_available
+        })
+    except Exception as e:
+        log.error(f"Check key error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/auth', methods=['POST'])
+@require_admin
+def api_authenticate_user():
+    """Authenticate user logic for API clients."""
+    try:
+        data = request.get_json() or {}
+        user_id = data.get('user_id', '')
+        key = data.get('key', '').strip().upper()
+        hwid = data.get('hwid', '')
+        
+        if not user_id or not key:
+             return jsonify({'success': False, 'error': 'Missing credentials'}), 400
+             
+        user = db.get_user(user_id)
+        if not user or user.get('key') != key:
+             return jsonify({'success': False, 'authenticated': False, 'message': 'Invalid credentials'}), 401
+             
+        # Check blacklist
+        if db.is_blacklisted(user_id):
+             return jsonify({'success': False, 'authenticated': False, 'message': 'Account banned'}), 403
+             
+        # HWID Logic
+        stored_hwid = user.get('hwid')
+        hwid_match = False
+        hwid_set = bool(stored_hwid)
+        
+        if hwid and not stored_hwid:
+             # First time HWID set
+             db.set_hwid(user_id, hwid)
+             hwid_match = True
+             hwid_set = True
+        elif hwid and stored_hwid:
+             hwid_match = (hwid == stored_hwid)
+        elif not hwid:
+             # If no HWID sent, we just verify creds
+             hwid_match = True 
+             
+        return jsonify({
+            'success': True,
+            'authenticated': True,
+            'hwid_match': hwid_match,
+            'hwid_set': hwid_set,
+            'message': 'Authenticated'
+        })
+    except Exception as e:
+        log.error(f"Auth API error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/verify', methods=['POST'])
+@require_admin
+def api_verify_license():
+    """Quick license verification."""
+    try:
+        data = request.get_json() or {}
+        user_id = data.get('user_id', '')
+        key = data.get('key', '').strip().upper()
+        
+        user = db.get_user(user_id)
+        if user and user.get('key') == key:
+             if db.is_blacklisted(user_id):
+                  return jsonify({'valid': False, 'reason': 'Banned'})
+             return jsonify({'valid': True, 'user_id': user_id})
+             
+        return jsonify({'valid': False, 'reason': 'Invalid credentials'})
+    except Exception as e:
+        log.error(f"Verify API error: {e}")
         return jsonify({'error': str(e)}), 500
 
 

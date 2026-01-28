@@ -1420,7 +1420,7 @@ class AdminCog(commands.Cog, name="Admin"):
         keys = []
         for _ in range(count):
             key = generate_key()
-            db.add_key(key, interaction.user.id)
+            db.generate_key_entry(key, interaction.user.id)
             keys.append(key)
         
         keys_text = "\n".join([f"`{k}`" for k in keys])

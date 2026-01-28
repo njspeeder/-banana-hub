@@ -461,6 +461,7 @@ def admin_panel(page='dashboard'):
 # ==============================================================================
 
 @app.route('/api/admin/users')
+@app.route('/api/users')
 @require_admin
 def api_admin_users():
     """Get all users with filtering and sorting."""
@@ -498,6 +499,7 @@ def api_admin_users():
 
 
 @app.route('/api/admin/stats')
+@app.route('/api/stats')
 @require_admin
 def api_admin_stats():
     """Get system statistics."""
@@ -510,6 +512,7 @@ def api_admin_stats():
 
 
 @app.route('/api/admin/generate-key', methods=['POST'])
+@app.route('/api/generate-key', methods=['POST'])
 @require_admin
 def api_generate_key():
     """Generate new license keys."""
@@ -540,6 +543,7 @@ def api_generate_key():
 
 
 @app.route('/api/admin/whitelist', methods=['POST'])
+@app.route('/api/whitelist', methods=['POST'])
 @require_admin
 def api_whitelist_user():
     """Whitelist a user with auto-generated key."""
@@ -580,6 +584,7 @@ def api_whitelist_user():
 
 
 @app.route('/api/admin/unwhitelist', methods=['POST'])
+@app.route('/api/unwhitelist', methods=['POST'])
 @require_admin
 def api_unwhitelist_user():
     """Remove user from whitelist."""
@@ -609,6 +614,7 @@ def api_unwhitelist_user():
 
 
 @app.route('/api/admin/blacklist', methods=['POST'])
+@app.route('/api/blacklist', methods=['POST'])
 @require_admin
 def api_blacklist_user():
     """Blacklist or unblacklist a user."""
@@ -638,6 +644,7 @@ def api_blacklist_user():
 
 
 @app.route('/api/admin/reset-hwid', methods=['POST'])
+@app.route('/api/reset-hwid-admin', methods=['POST'])
 @require_admin
 def api_admin_reset_hwid():
     """Force reset user HWID (admin)."""

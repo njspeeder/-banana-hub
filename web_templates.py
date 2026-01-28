@@ -2501,7 +2501,7 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                                     </td>
                                     <td style="font-size: 0.875rem; color: var(--text-muted);">{{ user.get('joined_at', 'Unknown')[:10] }}</td>
                                     <td>
-                                        {% if user.get('discord_id') in [b.get('discord_id') for b in blacklisted] %}
+                                        {% if user.get('discord_id') in (blacklisted | map(attribute='discord_id') | list) %}
                                         <span class="badge badge-error"><i class="fas fa-ban"></i> Banned</span>
                                         {% else %}
                                         <span class="badge badge-success"><i class="fas fa-check"></i> Active</span>

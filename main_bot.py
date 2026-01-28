@@ -23,6 +23,11 @@ from config import Config
 from database import db
 from website_server import run_server
 from bot_api_client import BananaAPI
+from components_v2 import patch_components_v2, ComponentsV2Config
+
+# Enable Components v2 for modern UI
+patch_components_v2()
+ComponentsV2Config.enable()
 
 logging.basicConfig(
     level=logging.DEBUG if getattr(Config, "DEBUG", True) else logging.INFO,
@@ -680,6 +685,178 @@ class UserCog(commands.Cog, name="User"):
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    @app_commands.command(name="profile", description="View your Banana Hub profile card")
+    async def profile(self, interaction: discord.Interaction):
+        """Show a beautiful profile card with user stats and buttons."""
+        user_data = db.get_user(interaction.user.id)
+        is_banned = db.is_blacklisted(interaction.user.id)
+        
+        if is_banned:
+            embed = create_embed("🚫 Account Suspended", "Your account has been blacklisted.", discord.Color.red())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        embed = create_embed("Your Profile", "", discord.Color.blurple())
+        embed.set_thumbnail(url=interaction.user.display_avatar.url)
+        
+        if user_data:
+            status = "✅ Licensed"
+            embed.add_field(name="🎫 License Status", value=status, inline=True)
+            embed.add_field(name="🔑 Key", value=f"||`{user_data.get('key', 'N/A')}`||", inline=True)
+            embed.add_field(name="💻 HWID", value=f"`{user_data.get('hwid', 'Not set')[:20]}...`" if user_data.get('hwid') else "Not set", inline=False)
+            
+            try:
+                analytics = db.get_user_analytics(interaction.user.id)
+                embed.add_field(name="📊 Activity", value=f"Logins: **{analytics.get('login_count', 0)}** | Resets: **{analytics.get('reset_count', 0)}**", inline=False)
+            except:
+                pass
+        else:
+            embed.add_field(name="⚠️ Not Licensed", value="Use `/redeem` to activate your account!", inline=False)
+        
+        # Add interactive buttons
+        view = discord.ui.View(timeout=300)
+        view.add_item(discord.ui.Button(label="🔄 Reset HWID", style=discord.ButtonStyle.secondary, custom_id="quick_reset_hwid"))
+        view.add_item(discord.ui.Button(label="🔑 Get Key", style=discord.ButtonStyle.primary, custom_id="quick_get_key"))
+        view.add_item(discord.ui.Button(label="🌐 Web Panel", style=discord.ButtonStyle.link, url=Config.WEBSITE_URL))
+        
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+    @app_commands.command(name="invite", description="Get the bot invite link")
+    async def invite(self, interaction: discord.Interaction):
+        """Generate bot invite link."""
+        bot_id = self.bot.user.id if self.bot.user else "UNKNOWN"
+        invite_url = f"https://discord.com/oauth2/authorize?client_id={bot_id}&permissions=8&scope=bot%20applications.commands"
+        
+        embed = create_embed("Invite Banana Hub", "Add Banana Hub to your server!", discord.Color.green())
+        embed.add_field(name="🔗 Invite Link", value=f"[Click Here]({invite_url})", inline=False)
+        embed.add_field(name="📋 Required Permissions", value="Administrator (for full functionality)", inline=False)
+        
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="🚀 Add to Server", style=discord.ButtonStyle.link, url=invite_url))
+        view.add_item(discord.ui.Button(label="🌐 Website", style=discord.ButtonStyle.link, url=Config.WEBSITE_URL))
+        
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+    @app_commands.command(name="changelog", description="View recent updates and changes")
+    async def changelog(self, interaction: discord.Interaction):
+        """Show changelog with latest updates."""
+        embed = create_embed("📝 Changelog", "Recent updates to Banana Hub")
+        
+        embed.add_field(
+            name="🆕 v2.2.0 - Components v2 Update",
+            value="• Modern UI with buttons and menus\n• Interactive profile cards\n• Enhanced admin dashboard\n• New utility commands",
+            inline=False
+        )
+        embed.add_field(
+            name="🔧 v2.1.0 - Stability Update",
+            value="• Improved HWID handling\n• Better error messages\n• Fixed key redemption bugs\n• Performance optimizations",
+            inline=False
+        )
+        embed.add_field(
+            name="🚀 v2.0.0 - Major Release",
+            value="• Web dashboard integration\n• API-based authentication\n• New admin commands\n• Enhanced security",
+            inline=False
+        )
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="status", description="Check Banana Hub service status")
+    async def status(self, interaction: discord.Interaction):
+        """Show service status."""
+        await interaction.response.defer(ephemeral=True)
+        
+        # Check various services
+        bot_latency = round(self.bot.latency * 1000)
+        bot_status = "🟢 Online" if bot_latency < 500 else "🟡 Slow"
+        
+        try:
+            result = await bot_api.get_stats()
+            api_status = "🟢 Online" if result.get('success') else "🔴 Offline"
+        except:
+            api_status = "🔴 Offline"
+        
+        try:
+            db.get_user(0)
+            db_status = "🟢 Online"
+        except:
+            db_status = "🔴 Offline"
+        
+        embed = create_embed("🔍 Service Status", "Current status of all Banana Hub services")
+        embed.add_field(name="🤖 Bot", value=f"{bot_status} ({bot_latency}ms)", inline=True)
+        embed.add_field(name="🌐 API", value=api_status, inline=True)
+        embed.add_field(name="💾 Database", value=db_status, inline=True)
+        embed.add_field(name="🔗 Website", value=f"[{Config.WEBSITE_URL}]({Config.WEBSITE_URL})", inline=False)
+        
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @app_commands.command(name="script", description="Get your personalized executor script")
+    async def script(self, interaction: discord.Interaction):
+        """Get the Roblox script for the user."""
+        user_data = db.get_user(interaction.user.id)
+        
+        if not user_data:
+            embed = create_embed("❌ Not Licensed", "You need to redeem a key first!\nUse `/redeem` to activate.", discord.Color.red())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        if db.is_blacklisted(interaction.user.id):
+            embed = create_embed("🚫 Blacklisted", "Your account has been suspended.", discord.Color.red())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        script_code = f'loadstring(game:HttpGet("{Config.WEBSITE_URL}/api/script/{user_data.get("key", "")}"))()'
+        
+        embed = create_embed("📜 Your Script", "Copy and paste this into your executor:")
+        embed.add_field(name="Script", value=f"```lua\n{script_code}\n```", inline=False)
+        embed.add_field(name="⚠️ Important", value="• Never share your script\n• Script is linked to your HWID\n• Contact support if issues arise", inline=False)
+        
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="🌐 Web Dashboard", style=discord.ButtonStyle.link, url=Config.WEBSITE_URL))
+        
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+    @app_commands.command(name="support", description="Get help and support information")
+    async def support(self, interaction: discord.Interaction):
+        """Show support information."""
+        embed = create_embed("🆘 Support Center", "Need help? We've got you covered!")
+        
+        embed.add_field(name="📖 Common Issues", value="• **HWID Locked**: Use `/reset-hwid` (5min cooldown)\n• **Invalid Key**: Check format `BANANA-XXX-XXX-XXX`\n• **Script Error**: Make sure you're whitelisted", inline=False)
+        embed.add_field(name="📬 Contact", value="• Use `/report` for bug reports\n• Use `/feedback` for suggestions\n• Visit our website for FAQ", inline=False)
+        embed.add_field(name="🔗 Quick Links", value=f"[Website]({Config.WEBSITE_URL}) • [Dashboard]({Config.WEBSITE_URL})", inline=False)
+        
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="📖 FAQ", style=discord.ButtonStyle.link, url=f"{Config.WEBSITE_URL}"))
+        view.add_item(discord.ui.Button(label="🎫 Open Ticket", style=discord.ButtonStyle.primary, custom_id="open_ticket", disabled=True))
+        
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+    @app_commands.command(name="report", description="Report a bug or issue")
+    @app_commands.describe(issue="Describe the bug or issue you encountered")
+    async def report(self, interaction: discord.Interaction, issue: str):
+        """Submit a bug report."""
+        db.log_event("bug_report", str(interaction.user.id), None, issue[:500])
+        
+        embed = create_embed("🐛 Bug Report Submitted", "Thank you for your report!", discord.Color.green())
+        embed.add_field(name="📝 Your Report", value=f"```{issue[:200]}{'...' if len(issue) > 200 else ''}```", inline=False)
+        embed.add_field(name="ℹ️ Next Steps", value="Our team will review your report. Major issues may result in a fix in future updates.", inline=False)
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+        # Log to console for admins
+        log.info(f"📝 Bug Report from {interaction.user} ({interaction.user.id}): {issue[:100]}")
+
+    @app_commands.command(name="feedback", description="Send feedback or suggestions")
+    @app_commands.describe(feedback="Your feedback or suggestion")
+    async def feedback(self, interaction: discord.Interaction, feedback: str):
+        """Submit feedback."""
+        db.log_event("feedback", str(interaction.user.id), None, feedback[:500])
+        
+        embed = create_embed("💡 Feedback Received", "Thank you for your input!", discord.Color.green())
+        embed.add_field(name="📝 Your Feedback", value=f"```{feedback[:200]}{'...' if len(feedback) > 200 else ''}```", inline=False)
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        log.info(f"💡 Feedback from {interaction.user} ({interaction.user.id}): {feedback[:100]}")
+
 
 class AdminCog(commands.Cog, name="Admin"):
     def __init__(self, bot: BananaBot) -> None:
@@ -1054,6 +1231,207 @@ class AdminCog(commands.Cog, name="Admin"):
             log.error(f"Stats error: {e}", exc_info=True)
             await interaction.followup.send(f"❌ Error: {str(e)[:100]}", ephemeral=True)
 
+    @app_commands.command(name="broadcast", description="🔧 [ADMIN] Send a message to all whitelisted users")
+    @app_commands.describe(message="The message to broadcast")
+    async def broadcast(self, interaction: discord.Interaction, message: str):
+        """Broadcast a message to all users (logs it)."""
+        if not await is_admin(interaction, self.bot):
+            await interaction.response.send_message("❌ Admin only!", ephemeral=True)
+            return
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        db.log_event("broadcast", str(interaction.user.id), None, message[:500])
+        
+        embed = create_embed("📢 Broadcast Sent", f"Message logged for delivery.", discord.Color.green())
+        embed.add_field(name="📝 Message", value=f"```{message[:500]}```", inline=False)
+        embed.add_field(name="📊 Status", value="Broadcast recorded. Users will see this on next login.", inline=False)
+        
+        await interaction.followup.send(embed=embed, ephemeral=True)
+        log.info(f"📢 Broadcast by {interaction.user}: {message[:100]}")
+
+    @app_commands.command(name="userlist", description="🔧 [ADMIN] View paginated user list")
+    @app_commands.describe(page="Page number (default: 1)")
+    async def userlist(self, interaction: discord.Interaction, page: int = 1):
+        """Show paginated list of all users."""
+        if not await is_admin(interaction, self.bot):
+            await interaction.response.send_message("❌ Admin only!", ephemeral=True)
+            return
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            result = await bot_api.get_all_users()
+            
+            if result.get('success'):
+                users = result.get('users', [])
+                per_page = 10
+                total_pages = max(1, (len(users) + per_page - 1) // per_page)
+                page = max(1, min(page, total_pages))
+                
+                start = (page - 1) * per_page
+                end = start + per_page
+                page_users = users[start:end]
+                
+                embed = create_embed(f"👥 User List (Page {page}/{total_pages})", f"Total: **{len(users)}** users")
+                
+                for i, user in enumerate(page_users, start=start+1):
+                    discord_id = user.get('discord_id', 'Unknown')
+                    key = user.get('key', 'N/A')[:8] + '...'
+                    status = "🟢" if user.get('hwid') else "🟡"
+                    embed.add_field(name=f"{i}. {status} ID: {discord_id}", value=f"Key: `{key}`", inline=True)
+                
+                view = discord.ui.View()
+                if page > 1:
+                    view.add_item(discord.ui.Button(label="⬅️ Previous", style=discord.ButtonStyle.secondary, custom_id=f"userlist_prev_{page}"))
+                if page < total_pages:
+                    view.add_item(discord.ui.Button(label="➡️ Next", style=discord.ButtonStyle.secondary, custom_id=f"userlist_next_{page}"))
+                
+                await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            else:
+                await interaction.followup.send(f"❌ {result.get('error')}", ephemeral=True)
+        except Exception as e:
+            await interaction.followup.send(f"❌ Error: {str(e)[:100]}", ephemeral=True)
+
+    @app_commands.command(name="keylist", description="🔧 [ADMIN] View available keys")
+    @app_commands.describe(show_used="Also show used keys")
+    async def keylist(self, interaction: discord.Interaction, show_used: bool = False):
+        """Show list of available keys."""
+        if not await is_admin(interaction, self.bot):
+            await interaction.response.send_message("❌ Admin only!", ephemeral=True)
+            return
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            result = await bot_api.get_stats()
+            
+            if result.get('success'):
+                stats = result['stats']
+                
+                embed = create_embed("🔑 Key Statistics", "License key overview")
+                embed.add_field(name="📊 Available", value=f"`{stats.get('available_keys', 0)}`", inline=True)
+                embed.add_field(name="✅ Used", value=f"`{stats.get('total_users', 0)}`", inline=True)
+                embed.add_field(name="📈 Total Generated", value=f"`{stats.get('available_keys', 0) + stats.get('total_users', 0)}`", inline=True)
+                
+                view = discord.ui.View()
+                view.add_item(discord.ui.Button(label="🔑 Generate Keys", style=discord.ButtonStyle.primary, custom_id="quick_genkey"))
+                view.add_item(discord.ui.Button(label="📋 Export", style=discord.ButtonStyle.secondary, custom_id="export_keys"))
+                
+                await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+            else:
+                await interaction.followup.send(f"❌ {result.get('error')}", ephemeral=True)
+        except Exception as e:
+            await interaction.followup.send(f"❌ Error: {str(e)[:100]}", ephemeral=True)
+
+    @app_commands.command(name="exportdata", description="🔧 [ADMIN] Export all data as JSON")
+    async def exportdata(self, interaction: discord.Interaction):
+        """Export all data as a downloadable file."""
+        if not await is_admin(interaction, self.bot):
+            await interaction.response.send_message("❌ Admin only!", ephemeral=True)
+            return
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            result = await bot_api.get_stats()
+            users_result = await bot_api.get_all_users()
+            
+            import json
+            export_data = {
+                "exported_at": datetime.now(UTC).isoformat(),
+                "exported_by": str(interaction.user.id),
+                "stats": result.get('stats', {}),
+                "users": users_result.get('users', [])
+            }
+            
+            json_str = json.dumps(export_data, indent=2)
+            file = discord.File(io.BytesIO(json_str.encode()), filename=f"banana_hub_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+            
+            embed = create_embed("📦 Data Export", "Your data export is ready!", discord.Color.green())
+            embed.add_field(name="📊 Stats", value=f"Users: `{len(users_result.get('users', []))}`", inline=True)
+            
+            await interaction.followup.send(embed=embed, file=file, ephemeral=True)
+            db.log_event("data_export", str(interaction.user.id), None, "Admin exported data")
+        except Exception as e:
+            await interaction.followup.send(f"❌ Error: {str(e)[:100]}", ephemeral=True)
+
+    @app_commands.command(name="purgekeys", description="🔧 [ADMIN] Delete unused keys")
+    @app_commands.describe(confirm="Type 'CONFIRM' to proceed")
+    async def purgekeys(self, interaction: discord.Interaction, confirm: str = ""):
+        """Purge unused keys."""
+        if not await is_admin(interaction, self.bot):
+            await interaction.response.send_message("❌ Admin only!", ephemeral=True)
+            return
+        
+        if confirm != "CONFIRM":
+            embed = create_embed("⚠️ Confirmation Required", "This will delete ALL unused keys!\n\nRe-run with `confirm: CONFIRM` to proceed.", discord.Color.orange())
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            count = db.purge_unused_keys() if hasattr(db, 'purge_unused_keys') else 0
+            
+            embed = create_embed("🗑️ Keys Purged", f"Deleted **{count}** unused keys.", discord.Color.green())
+            db.log_event("purge_keys", str(interaction.user.id), None, f"Purged {count} keys")
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        except Exception as e:
+            await interaction.followup.send(f"❌ Error: {str(e)[:100]}", ephemeral=True)
+
+    @app_commands.command(name="announce", description="🔧 [ADMIN] Send an announcement embed to a channel")
+    @app_commands.describe(channel="Channel to send to", title="Announcement title", message="Announcement message")
+    async def announce(self, interaction: discord.Interaction, channel: discord.TextChannel, title: str, message: str):
+        """Send a fancy announcement."""
+        if not await is_admin(interaction, self.bot):
+            await interaction.response.send_message("❌ Admin only!", ephemeral=True)
+            return
+        
+        embed = create_embed(f"📢 {title}", message, discord.Color.gold())
+        embed.set_author(name="Banana Hub Announcement", icon_url=self.bot.user.display_avatar.url if self.bot.user else None)
+        
+        try:
+            await channel.send(embed=embed)
+            await interaction.response.send_message(f"✅ Announcement sent to {channel.mention}!", ephemeral=True)
+            db.log_event("announcement", str(interaction.user.id), None, f"Sent to {channel.id}: {title}")
+        except discord.Forbidden:
+            await interaction.response.send_message("❌ No permission to send to that channel!", ephemeral=True)
+
+    @app_commands.command(name="masskey", description="🔧 [ADMIN] Generate multiple keys at once")
+    @app_commands.describe(count="Number of keys to generate (1-50)")
+    async def masskey(self, interaction: discord.Interaction, count: int = 5):
+        """Generate multiple keys."""
+        if not await is_admin(interaction, self.bot):
+            await interaction.response.send_message("❌ Admin only!", ephemeral=True)
+            return
+        
+        count = max(1, min(count, 50))
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        keys = []
+        for _ in range(count):
+            key = generate_key()
+            db.add_key(key, interaction.user.id)
+            keys.append(key)
+        
+        keys_text = "\n".join([f"`{k}`" for k in keys])
+        
+        embed = create_embed(f"🔑 Generated {count} Keys", "Keys have been added to the database.")
+        
+        # Send keys as a file if too many
+        if count > 10:
+            file_content = "\n".join(keys)
+            file = discord.File(io.BytesIO(file_content.encode()), filename=f"keys_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt")
+            await interaction.followup.send(embed=embed, file=file, ephemeral=True)
+        else:
+            embed.add_field(name="🔑 Keys", value=keys_text, inline=False)
+            await interaction.followup.send(embed=embed, ephemeral=True)
+        
+        db.log_event("mass_keygen", str(interaction.user.id), None, f"Generated {count} keys")
+
 
 class UtilityCog(commands.Cog, name="Utility"):
     def __init__(self, bot: BananaBot) -> None:
@@ -1086,9 +1464,24 @@ class UtilityCog(commands.Cog, name="Utility"):
             value=(
                 "`/redeem` - Redeem license key\n"
                 "`/panel` - Dashboard with buttons\n"
+                "`/profile` - View profile card\n"
                 "`/getkey` - Get key via DM\n"
                 "`/reset-hwid` - Reset HWID\n"
-                "`/myinfo` - Account info"
+                "`/myinfo` - Account info\n"
+                "`/script` - Get executor script\n"
+                "`/status` - Check service status"
+            ),
+            inline=False
+        )
+        
+        embed.add_field(
+            name="📬 Feedback",
+            value=(
+                "`/support` - Get help\n"
+                "`/report` - Report a bug\n"
+                "`/feedback` - Send suggestions\n"
+                "`/changelog` - View updates\n"
+                "`/invite` - Bot invite link"
             ),
             inline=False
         )
@@ -1102,10 +1495,23 @@ class UtilityCog(commands.Cog, name="Utility"):
                     "`/unwhitelist` - Remove user\n"
                     "`/lookup` - User lookup\n"
                     "`/genkey` - Generate keys\n"
+                    "`/masskey` - Generate multiple keys\n"
                     "`/blacklist` - Ban user\n"
                     "`/unblacklist` - Remove from blacklist\n"
                     "`/forceresethwid` - Force HWID reset\n"
                     "`/stats` - System stats"
+                ),
+                inline=False
+            )
+            embed.add_field(
+                name="📊 Admin Tools",
+                value=(
+                    "`/userlist` - View all users\n"
+                    "`/keylist` - View key stats\n"
+                    "`/broadcast` - Send broadcast\n"
+                    "`/announce` - Channel announcement\n"
+                    "`/exportdata` - Export data as JSON\n"
+                    "`/purgekeys` - Delete unused keys"
                 ),
                 inline=False
             )

@@ -898,7 +898,9 @@ class AdminCog(commands.Cog, name="Admin"):
                 view = AdminPanelView(self.bot)
                 await interaction.followup.send(embed=embed, view=view, ephemeral=True)
             else:
-                await interaction.followup.send(f"❌ {result.get('error') or 'Unknown error'}", ephemeral=True)
+                error_msg = result.get('error') or 'Server returned unknown error'
+                if str(error_msg).lower() == 'none': error_msg = 'Server returned no error details'
+                await interaction.followup.send(f"❌ {error_msg}", ephemeral=True)
             
         except Exception as e:
             log.error(f"Admin panel error: {e}", exc_info=True)
@@ -1326,7 +1328,9 @@ class AdminCog(commands.Cog, name="Admin"):
                 
                 await interaction.followup.send(embed=embed, view=view, ephemeral=True)
             else:
-                await interaction.followup.send(f"❌ {result.get('error') or 'Unknown error'}", ephemeral=True)
+                error_msg = result.get('error') or 'Server returned unknown error'
+                if str(error_msg).lower() == 'none': error_msg = 'Server returned no error details'
+                await interaction.followup.send(f"❌ {error_msg}", ephemeral=True)
         except Exception as e:
             await interaction.followup.send(f"❌ Error: {str(e)[:100]}", ephemeral=True)
 

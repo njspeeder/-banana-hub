@@ -1,5 +1,5 @@
 @echo off
 echo Starting Banana Hub...
 pip install -r requirements.txt
-python main.py
+python main_bot.py
 pause

@@ -440,16 +440,71 @@ def admin_panel(page='dashboard'):
         log.error(f"Admin panel error: {e}", exc_info=True)
         return f"""
         <html>
-        <head>
-            <title>Admin Error</title>
-            <style>
-                body {{ font-family: monospace; padding: 2rem; background: #0A0E1A; color: #fff; }}
-                pre {{ background: #141824; padding: 1rem; border-radius: 8px; overflow-x: auto; }}
-                .error {{ color: #EF4444; }}
-                a {{ color: #FACC15; text-decoration: none; }}
-            </style>
-        </head>
-        <body>
+        <head><title>Admin Error</title></head>
+        <body><h1>Admin Panel Error</h1><pre>{str(e)}</pre></body>
+        </html>
+        """, 500
+
+
+@app.route('/script.lua')
+def script_lua():
+    """
+    Dynamic Loader Script endpoint.
+    Serves the premium Roblox script from file.
+    """
+    try:
+        if not os.path.exists("script.lua"):
+            return '-- Error: script.lua not found on server', 404, {'Content-Type': 'text/plain'}
+            
+        with open("script.lua", "r", encoding="utf-8") as f:
+            content = f.read()
+            
+        # Inject the website URL into the script so it knows where to call back
+        website_url = Config.WEBSITE_URL or f"http://{request.host}"
+        content = content.replace("[[API_URL]]", website_url)
+        
+        return content, 200, {'Content-Type': 'text/plain'}
+    except Exception as e:
+        log.error(f"Error serving script.lua: {e}")
+        return f'-- Server Error: {str(e)}', 500, {'Content-Type': 'text/plain'}
+
+
+@app.route('/api/verify')
+def api_verify():
+    """
+    Verification endpoint for the Roblox script.
+    """
+    user_id = request.args.get('user_id')
+    key = request.args.get('key')
+    hwid = request.args.get('hwid')
+    
+    if not user_id or not key:
+        return jsonify({"success": False, "error": "Missing parameters"}), 400
+        
+    # Check blacklist
+    if db.is_blacklisted(user_id):
+        return jsonify({"success": False, "error": "User is blacklisted"}), 403
+        
+    # Get user
+    user = db.get_user(user_id)
+    if not user:
+        return jsonify({"success": False, "error": "User not registered"}), 404
+        
+    # Verify key
+    if user.get('key') != key:
+        return jsonify({"success": False, "error": "Invalid license key"}), 403
+        
+    # Logic for HWID could be added here if needed
+    # For now, we just succeed
+    
+    db.log_event("script_auth", user_id, request.remote_addr, "Successful script authentication")
+    
+    return jsonify({
+        "success": True, 
+        "message": "Authenticated",
+        "user_id": user_id
+    })
+
             <h1 class="error">Admin Panel Error</h1>
             <p>An error occurred while loading the admin panel.</p>
             <pre>{str(e)}</pre>

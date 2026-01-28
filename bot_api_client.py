@@ -24,7 +24,7 @@ class BananaAPI:
         self.api_url = api_url.rstrip('/')
         self.api_key = api_key
         self.headers = {
-            "X-API-Key": api_key,
+            "X-Admin-Key": api_key,
             "Content-Type": "application/json"
         }
         self.timeout = aiohttp.ClientTimeout(total=30)

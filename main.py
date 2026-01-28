@@ -15,23 +15,26 @@ import asyncio
 import logging
 from flask import Flask, request, jsonify, render_template_string, send_file
 from flask_cors import CORS
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ==============================================================================
 # ⚙️ CONFIGURATION
 # ==============================================================================
 CONFIG = {
-    "TOKEN": "MTQ0NjUyOTgxNzQzOTg5OTc1MA.GKv_XN.iGGQmSnfWVygNTT_qo9R3OIPnc3wFpHjIAKOhE", 
-    "OWNER_ID": 1269772767516033025,
-    "PREFIX": "/",
+    "TOKEN": os.getenv("BOT_TOKEN", "MTQ0NjUyOTgxNzQzOTg5OTc1MA.GKv_XN.iGGQmSnfWVygNTT_qo9R3OIPnc3wFpHjIAKOhE"), 
+    "OWNER_ID": int(os.getenv("OWNER_ID", 1269772767516033025)),
+    "PREFIX": os.getenv("PREFIX", "/"),
     "DATA_DIR": "data",
     "DB_FILE": "platinum_db.json",
-    "WEB_PORT": 5000,
+    "WEB_PORT": int(os.getenv("PORT", 5000)),
     "ROLES": {
         "BUYER": "Premium User",
     },
     "URLS": {
-        "LOADER": "http://127.0.0.1:5000/script.lua", 
-        "DASHBOARD": "http://127.0.0.1:5000/dashboard",
+        "LOADER": f"{os.getenv('BASE_URL', 'http://127.0.0.1:5000')}/script.lua", 
+        "DASHBOARD": f"{os.getenv('WEBSITE_URL', 'http://127.0.0.1:5000')}/dashboard",
         "LOGO": "https://em-content.zobj.net/source/microsoft-teams/337/banana_1f34c.png"
     }
 }
@@ -58,29 +61,73 @@ class DatabaseManager:
 
     def load(self):
         with self.lock:
-            if not os.path.exists(self.path): self.data = self.get_schema(); self.save_unsafe()
+            if not os.path.exists(self.path):
+                self.data = self.get_schema()
+                self.save_unsafe()
             else:
-                try: with open(self.path, 'r') as f: self.data = json.load(f)
-                except: self.data = self.get_schema(); self.save_unsafe()
+                try:
+                    with open(self.path, 'r') as f:
+                        self.data = json.load(f)
+                except:
+                    self.data = self.get_schema()
+                    self.save_unsafe()
 
-    def save(self): with self.lock: self.save_unsafe()
-    def save_unsafe(self): with open(self.path, 'w') as f: json.dump(self.data, f, indent=4)
+    def save(self):
+        with self.lock:
+            self.save_unsafe()
+
+    def save_unsafe(self):
+        with open(self.path, 'w') as f:
+            json.dump(self.data, f, indent=4)
     
-    def get_user(self, uid): self.load(); return self.data["users"].get(str(uid))
-    def register_user(self, uid, key): self.load(); self.data["users"][str(uid)] = {"key": key, "hwid": None, "date": str(datetime.datetime.now())}; self.save()
+    def get_user(self, uid):
+        self.load()
+        return self.data["users"].get(str(uid))
+
+    def register_user(self, uid, key):
+        self.load()
+        self.data["users"][str(uid)] = {"key": key, "hwid": None, "date": str(datetime.datetime.now())}
+        self.save()
+
     def reset_hwid(self, uid): 
-        self.load(); uid=str(uid)
-        if uid in self.data["users"]: self.data["users"][uid]["hwid"]=None; self.save(); return True
+        self.load()
+        uid = str(uid)
+        if uid in self.data["users"]:
+            self.data["users"][uid]["hwid"] = None
+            self.save()
+            return True
         return False
-    def add_key(self, key, creator): self.load(); self.data["keys"][key] = {"by": str(creator), "used": False}; self.save()
-    def check_key(self, key): self.load(); return key in self.data["keys"] and not self.data["keys"][key]["used"]
-    def use_key(self, key, uid): self.load(); self.data["keys"][key]["used"]=True; self.data["keys"][key]["used_by"]=str(uid); self.save()
-    def is_blacklisted(self, uid): self.load(); return str(uid) in self.data["blacklist"]
+
+    def add_key(self, key, creator):
+        self.load()
+        self.data["keys"][key] = {"by": str(creator), "used": False}
+        self.save()
+
+    def check_key(self, key):
+        self.load()
+        return key in self.data["keys"] and not self.data["keys"][key]["used"]
+
+    def use_key(self, key, uid):
+        self.load()
+        self.data["keys"][key]["used"] = True
+        self.data["keys"][key]["used_by"] = str(uid)
+        self.save()
+
+    def is_blacklisted(self, uid):
+        self.load()
+        return str(uid) in self.data["blacklist"]
+
     def toggle_blacklist(self, uid):
-        self.load(); uid=str(uid)
-        if uid in self.data["blacklist"]: self.data["blacklist"].remove(uid); r=False
-        else: self.data["blacklist"].append(uid); r=True
-        self.save(); return r
+        self.load()
+        uid = str(uid)
+        if uid in self.data["blacklist"]:
+            self.data["blacklist"].remove(uid)
+            r = False
+        else:
+            self.data["blacklist"].append(uid)
+            r = True
+        self.save()
+        return r
 
 # Initialize DB immediately after class definition
 db = DatabaseManager()
@@ -184,7 +231,7 @@ LOGIN_HTML = f"""
             </div>
             <div>
                 <label class="text-xs font-bold text-zinc-500 ml-1 uppercase">License Key</label>
-                <input type="password" id="key" class="w-full bg-black/50 border border-zinc-800 rounded-xl p-4 mt-1 text-white focus:border-yellow-400 focus:outline-none transition" placeholder="BANANA-XXXX-XXXX">
+                <input type="password" id="key" class="w-full bg-black/50 border border-zinc-800 rounded-xl p-4 mt-1 text-white focus:border-yellow-400 focus:outline-none transition" placeholder="BANANA-XXX-XXX-XXX">
             </div>
             <button onclick="login()" class="btn-primary w-full py-4 rounded-xl mt-4">Authenticate</button>
         </div>
@@ -430,7 +477,11 @@ async def panel(i: discord.Interaction):
 @bot.tree.command(name="genkey", description="[Admin] Generate Key")
 async def genkey(i: discord.Interaction):
     if i.user.id != CONFIG["OWNER_ID"]: return
-    k = f"BANANA-{''.join(random.choices(string.ascii_uppercase+string.digits,k=10))}"
+    chars = string.ascii_uppercase + string.digits
+    part1 = ''.join(random.choices(chars, k=3))
+    part2 = ''.join(random.choices(chars, k=3))
+    part3 = ''.join(random.choices(chars, k=3))
+    k = f"BANANA-{part1}-{part2}-{part3}"
     db.add_key(k, i.user.id)
     await i.response.send_message(f"🔑 ||`{k}`||", ephemeral=True)
 

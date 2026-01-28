@@ -1,11 +1,14 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Config:
     """Configuration for Banana Hub - Production Ready"""
     
     # ========== BOT SETTINGS ==========
-    BOT_TOKEN = os.getenv("BOT_TOKEN", "MTQ0NjUyOTgxNzQzOTg5OTc1MA.GKv_XN.iGGQmSnfWVygNTT_qo9R3OIPnc3wFpHjIAKOhE")
-    PREFIX = "!"
+    BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+    PREFIX = os.getenv("PREFIX", "!")
     
     # ========== WEB SETTINGS ==========
     WEB_HOST = "0.0.0.0"  # Required for Render

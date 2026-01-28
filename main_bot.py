@@ -45,8 +45,10 @@ bot_api = BananaAPI(Config.WEBSITE_URL, Config.ADMIN_API_KEY)
 
 def generate_key(length: int = 12) -> str:
     alphabet = string.ascii_uppercase + string.digits
-    body = "".join(secrets.choice(alphabet) for _ in range(length))
-    return f"BANANA-{body}"
+    part1 = "".join(secrets.choice(alphabet) for _ in range(3))
+    part2 = "".join(secrets.choice(alphabet) for _ in range(3))
+    part3 = "".join(secrets.choice(alphabet) for _ in range(3))
+    return f"BANANA-{part1}-{part2}-{part3}"
 
 
 def validate_discord_id(discord_id: str) -> bool:
@@ -54,7 +56,7 @@ def validate_discord_id(discord_id: str) -> bool:
 
 
 def validate_key_format(key: str) -> bool:
-    return bool(re.match(r'^BANANA-[A-Z0-9]{12,}$', key.strip().upper()))
+    return bool(re.match(r'^BANANA-[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}$', key.strip().upper()))
 
 
 def chunk_text(text: str, size: int = 1900) -> List[str]:
@@ -498,14 +500,14 @@ class UserCog(commands.Cog, name="User"):
         self.bot = bot
 
     @app_commands.command(name="redeem", description="Redeem your Banana Hub license key")
-    @app_commands.describe(key="Your BANANA-XXXXXXXXXXXX license key")
+    @app_commands.describe(key="Your BANANA-XXX-XXX-XXX license key")
     async def redeem(self, interaction: discord.Interaction, key: str):
         key_value = key.strip().upper()
         
         if not validate_key_format(key_value):
             embed = create_embed(
                 "❌ Invalid Format",
-                "Keys must be: `BANANA-XXXXXXXXXXXX`",
+                "Keys must be: `BANANA-XXX-XXX-XXX`",
                 discord.Color.red()
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)

@@ -77,9 +77,12 @@ def require_admin(f):
 # ==============================================================================
 
 def generate_key() -> str:
-    """Generate a random license key."""
+    """Generate a random license key in BANANA-XXX-XXX-XXX format."""
     chars = string.ascii_uppercase + string.digits
-    return 'BH-' + ''.join(random.choices(chars, k=12))
+    part1 = ''.join(random.choices(chars, k=3))
+    part2 = ''.join(random.choices(chars, k=3))
+    part3 = ''.join(random.choices(chars, k=3))
+    return f'BANANA-{part1}-{part2}-{part3}'
 
 
 def generate_loader_script(user_id: str, key: str) -> str:

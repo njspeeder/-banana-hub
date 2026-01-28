@@ -804,7 +804,7 @@ class UserCog(commands.Cog, name="User"):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         
-        script_code = f'loadstring(game:HttpGet("{Config.WEBSITE_URL}/api/script/{user_data.get("key", "")}"))()'
+        script_code = f'loadstring(game:HttpGet("{Config.WEBSITE_URL}/script.lua?user_id={interaction.user.id}&key={user_data.get("key", "")}"))()'
         
         embed = create_embed("📜 Your Script", "Copy and paste this into your executor:")
         embed.add_field(name="Script", value=f"```lua\n{script_code}\n```", inline=False)
@@ -898,7 +898,7 @@ class AdminCog(commands.Cog, name="Admin"):
                 view = AdminPanelView(self.bot)
                 await interaction.followup.send(embed=embed, view=view, ephemeral=True)
             else:
-                await interaction.followup.send(f"❌ {result.get('error')}", ephemeral=True)
+                await interaction.followup.send(f"❌ {result.get('error') or 'Unknown error'}", ephemeral=True)
             
         except Exception as e:
             log.error(f"Admin panel error: {e}", exc_info=True)
@@ -1133,7 +1133,7 @@ class AdminCog(commands.Cog, name="Admin"):
             await interaction.followup.send(embed=embed, ephemeral=True)
             log.info(f"Generated {len(keys)} keys by admin {interaction.user.id}")
         else:
-            await interaction.followup.send(f"❌ {result.get('error')}", ephemeral=True)
+            await interaction.followup.send(f"❌ {result.get('error') or 'Unknown error'}", ephemeral=True)
 
     @app_commands.command(name="blacklist", description="🔧 [ADMIN] Blacklist a user")
     @app_commands.describe(member="User to blacklist", reason="Reason")
@@ -1232,7 +1232,7 @@ class AdminCog(commands.Cog, name="Admin"):
                 
                 await interaction.followup.send(embed=embed, ephemeral=True)
             else:
-                await interaction.followup.send(f"❌ {result.get('error')}", ephemeral=True)
+                await interaction.followup.send(f"❌ {result.get('error') or 'Unknown error'}", ephemeral=True)
         except Exception as e:
             log.error(f"Stats error: {e}", exc_info=True)
             await interaction.followup.send(f"❌ Error: {str(e)[:100]}", ephemeral=True)
@@ -1295,7 +1295,7 @@ class AdminCog(commands.Cog, name="Admin"):
                 
                 await interaction.followup.send(embed=embed, view=view, ephemeral=True)
             else:
-                await interaction.followup.send(f"❌ {result.get('error')}", ephemeral=True)
+                await interaction.followup.send(f"❌ {result.get('error') or 'Unknown error'}", ephemeral=True)
         except Exception as e:
             await interaction.followup.send(f"❌ Error: {str(e)[:100]}", ephemeral=True)
 
@@ -1326,7 +1326,7 @@ class AdminCog(commands.Cog, name="Admin"):
                 
                 await interaction.followup.send(embed=embed, view=view, ephemeral=True)
             else:
-                await interaction.followup.send(f"❌ {result.get('error')}", ephemeral=True)
+                await interaction.followup.send(f"❌ {result.get('error') or 'Unknown error'}", ephemeral=True)
         except Exception as e:
             await interaction.followup.send(f"❌ Error: {str(e)[:100]}", ephemeral=True)
 

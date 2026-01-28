@@ -505,13 +505,6 @@ def api_verify():
         "user_id": user_id
     })
 
-            <h1 class="error">Admin Panel Error</h1>
-            <p>An error occurred while loading the admin panel.</p>
-            <pre>{str(e)}</pre>
-            <p><a href="/logout">← Logout and try again</a></p>
-        </body>
-        </html>
-        """, 500
 
 # ==============================================================================
 # 🛡️ ADMIN API ENDPOINTS

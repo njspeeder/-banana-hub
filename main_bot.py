@@ -498,6 +498,13 @@ class BananaBot(commands.Bot):
                 pass
         else:
             log.error(f"Command error: {error}", exc_info=True)
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(f"❌ **An error occurred:** `{str(error)}`", ephemeral=True)
+                else:
+                    await interaction.followup.send(f"❌ **An error occurred:** `{str(error)}`", ephemeral=True)
+            except:
+                pass
 
 
 class UserCog(commands.Cog, name="User"):
@@ -507,6 +514,7 @@ class UserCog(commands.Cog, name="User"):
     @app_commands.command(name="redeem", description="Redeem your Banana Hub license key")
     @app_commands.describe(key="Your BANANA-XXX-XXX-XXX license key")
     async def redeem(self, interaction: discord.Interaction, key: str):
+        await interaction.response.defer(ephemeral=True)
         key_value = key.strip().upper()
         
         if not validate_key_format(key_value):
@@ -515,7 +523,7 @@ class UserCog(commands.Cog, name="User"):
                 "Keys must be: `BANANA-XXX-XXX-XXX`",
                 discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         async with safe_db_operation("redeem_key"):
@@ -526,7 +534,7 @@ class UserCog(commands.Cog, name="User"):
                         "This key is invalid, already used, or expired.",
                         discord.Color.red()
                     )
-                    await interaction.response.send_message(embed=embed, ephemeral=True)
+                    await interaction.followup.send(embed=embed, ephemeral=True)
                     return
 
                 existing_user = db.get_user(interaction.user.id)
@@ -536,7 +544,7 @@ class UserCog(commands.Cog, name="User"):
                         f"You already have: `{existing_user['key']}`\n\nContact an admin to change keys.",
                         discord.Color.orange()
                     )
-                    await interaction.response.send_message(embed=embed, ephemeral=True)
+                    await interaction.followup.send(embed=embed, ephemeral=True)
                     return
 
                 db.register_user(interaction.user.id, key_value)
@@ -561,16 +569,18 @@ class UserCog(commands.Cog, name="User"):
                         inline=False
                     )
                 
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 log.info(f"✅ Key redeemed: {key_value} by {interaction.user.id}")
 
             except Exception as exc:
                 log.exception(f"Error redeeming key")
                 embed = create_embed("❌ Error", "Failed to redeem key. Try again.", discord.Color.red())
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name="panel", description="Access your Banana Hub dashboard")
     async def panel(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
         user = db.get_user(interaction.user.id)
         
         embed = create_embed("Your Dashboard")
@@ -614,16 +624,17 @@ class UserCog(commands.Cog, name="User"):
             )
         
         view = UserPanelView(interaction.user.id, has_key)
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
     @app_commands.command(name="getkey", description="Get your license key via DM")
     @app_commands.checks.cooldown(1, 30, key=lambda i: i.user.id)
     async def getkey(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
         user = db.get_user(interaction.user.id)
         
         if not user or not user.get("key"):
             embed = create_embed("❌ No License", "Use `/redeem <key>` first.", discord.Color.red())
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         key = user["key"]
@@ -634,10 +645,11 @@ class UserCog(commands.Cog, name="User"):
                 dm_embed.add_field(name="🌐 Login", value=f"[Web Panel]({Config.WEBSITE_URL}/login)", inline=False)
             
             await interaction.user.send(embed=dm_embed)
-            await interaction.response.send_message("✅ Key sent to your DMs!", ephemeral=True)
-            
+            await interaction.followup.send("✅ Key sent to your DMs!", ephemeral=True)
         except discord.Forbidden:
-            await interaction.response.send_message(f"||`{key}`||\n⚠️ Enable DMs!", ephemeral=True)
+            await interaction.followup.send(f"❌ FAILED: Please enable DMs!\n**Your Key:** ||`{key}`||", ephemeral=True)
+        except Exception as e:
+            await interaction.followup.send(f"❌ Failed to send DM: {str(e)}", ephemeral=True)
 
     @app_commands.command(name="reset-hwid", description="Reset your hardware ID")
     @app_commands.checks.cooldown(1, 300, key=lambda i: i.user.id)
@@ -654,6 +666,7 @@ class UserCog(commands.Cog, name="User"):
 
     @app_commands.command(name="myinfo", description="View your account information")
     async def myinfo(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
         user = db.get_user(interaction.user.id)
         is_banned = db.is_blacklisted(interaction.user.id)
         
@@ -679,11 +692,7 @@ class UserCog(commands.Cog, name="User"):
                 pass
         else:
             embed.add_field(name="⚠️ No License", value="Use `/redeem` to activate.", inline=False)
-        
-        status = "🔴 BLACKLISTED" if is_banned else "🟢 Active"
-        embed.add_field(name="Status", value=status, inline=False)
-        
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name="profile", description="View your Banana Hub profile card")
     async def profile(self, interaction: discord.Interaction):

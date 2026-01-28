@@ -2076,9 +2076,23 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .nav-link.active {
-    background: linear-gradient(135deg, rgba(250, 204, 21, 0.1), rgba(245, 158, 11, 0.05));
+    background: rgba(250, 204, 21, 0.1);
     color: var(--primary);
-    border-left: 3px solid var(--primary);
+    border-left: 4px solid var(--primary);
+}
+
+.sidebar-section {
+    margin-bottom: 2.5rem;
+}
+
+.sidebar-header {
+    padding: 0 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
 }
 
 .nav-link i {
@@ -2135,66 +2149,50 @@ ADMIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
         </div>
         
         <!-- Admin Navigation Menu -->
-        <nav style="padding: 1.5rem 1rem;">
-            <div style="margin-bottom: 2rem;">
-                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                    Overview
-                </div>
-                
+        <nav style="padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+            <div class="sidebar-section">
+                <div class="sidebar-header">Overview</div>
                 <a href="/admin" class="nav-link active" data-page="dashboard" onclick="switchAdminPage(event, 'dashboard')">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
-                
                 <a href="/admin/analytics" class="nav-link" data-page="analytics" onclick="switchAdminPage(event, 'analytics')">
                     <i class="fas fa-chart-line"></i>
                     <span>Analytics</span>
                 </a>
             </div>
             
-            <div style="margin-bottom: 2rem;">
-                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                    Management
-                </div>
-                
+            <div class="sidebar-section">
+                <div class="sidebar-header">Management</div>
                 <a href="/admin/users" class="nav-link" data-page="users" onclick="switchAdminPage(event, 'users')">
-                    <i class="fas fa-users"></i>
+                    <i class="fas fa-users-cog"></i>
                     <span>Users</span>
                 </a>
-                
                 <a href="/admin/keys" class="nav-link" data-page="keys" onclick="switchAdminPage(event, 'keys')">
                     <i class="fas fa-key"></i>
                     <span>License Keys</span>
                 </a>
-                
                 <a href="/admin/logs" class="nav-link" data-page="logs" onclick="switchAdminPage(event, 'logs')">
-                    <i class="fas fa-list"></i>
+                    <i class="fas fa-list-alt"></i>
                     <span>Activity Logs</span>
                 </a>
             </div>
             
-            <div style="margin-bottom: 2rem;">
-                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                    System
-                </div>
-                
+            <div class="sidebar-section">
+                <div class="sidebar-header">System</div>
                 <a href="/admin/settings" class="nav-link" data-page="settings" onclick="switchAdminPage(event, 'settings')">
-                    <i class="fas fa-cog"></i>
+                    <i class="fas fa-cogs"></i>
                     <span>Settings</span>
                 </a>
             </div>
             
-            <div>
-                <div style="padding: 0 0.75rem; margin-bottom: 0.75rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                    Quick Actions
-                </div>
-                
+            <div class="sidebar-section">
+                <div class="sidebar-header">Quick Actions</div>
                 <a href="/dashboard" class="nav-link">
-                    <i class="fas fa-user"></i>
+                    <i class="fas fa-user-circle"></i>
                     <span>User Panel</span>
                 </a>
-                
-                <a href="/logout" class="nav-link" style="color: var(--error);">
+                <a href="/logout" class="nav-link" style="color: var(--error); margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1.25rem;">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </a>

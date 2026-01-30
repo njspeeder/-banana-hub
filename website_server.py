@@ -158,6 +158,17 @@ def get_discord_profile(user_id: str) -> Dict[str, str]:
     return data
 
 
+def is_discord_member(user_id: str) -> bool:
+    """Verify user is a member of the configured guild (if set)."""
+    user_id = str(user_id or "")
+    guild_id = getattr(Config, 'GUILD_ID', None) or os.getenv("GUILD_ID")
+    token = getattr(Config, 'BOT_TOKEN', '') or os.getenv("BOT_TOKEN", "")
+    if not guild_id or not token:
+        return True
+    profile = _discord_api_request(f"/guilds/{guild_id}/members/{user_id}")
+    return profile is not None
+
+
 def generate_loader_script(user_id: str, key: str) -> str:
     """Generate Lua loader script for user."""
     website_url = getattr(Config, 'WEBSITE_URL', 'https://banana-hub.onrender.com')
@@ -355,6 +366,43 @@ def login():
         return f"<h1>Error Loading Login</h1><pre>{str(e)}</pre>", 500
 
 
+@app.route('/trial')
+def trial_page():
+    """Free 24-hour trial page."""
+    try:
+        return render_template_string(TEMPLATES['trial'])
+    except Exception as e:
+        log.error(f"Trial page error: {e}", exc_info=True)
+        return f"<h1>Error Loading Trial</h1><pre>{str(e)}</pre>", 500
+
+
+@app.route('/trial/dashboard')
+def trial_dashboard():
+    """Trial dashboard page."""
+    try:
+        key = request.args.get('key', '').strip()
+        if not key:
+            return "<h1>Missing trial key</h1>", 400
+
+        trial = db.get_trial_by_key(key)
+        if not trial:
+            return "<h1>Invalid trial key</h1>", 404
+
+        expires_at = trial.get('expires_at')
+        if expires_at and datetime.fromisoformat(expires_at) <= datetime.now(UTC):
+            return "<h1>Trial expired</h1>", 403
+
+        website_url = getattr(Config, 'WEBSITE_URL', 'https://banana-hub.onrender.com')
+        return render_template_string(
+            TEMPLATES['trial_dashboard'],
+            trial=trial,
+            website_url=website_url
+        )
+    except Exception as e:
+        log.error(f"Trial dashboard error: {e}", exc_info=True)
+        return f"<h1>Error Loading Trial Dashboard</h1><pre>{str(e)}</pre>", 500
+
+
 @app.route('/logout')
 def logout():
     """Logout user and clear session."""
@@ -362,6 +410,41 @@ def logout():
     session.clear()
     log.info(f"User logged out: {user_id}")
     return redirect(url_for('index'))
+
+
+@app.route('/api/trial/start', methods=['POST'])
+def api_trial_start():
+    """Create or return an active 24-hour trial key."""
+    try:
+        data = request.get_json() if request.is_json else request.form
+        discord_id = str((data.get('discord_id') or '')).strip()
+
+        if not discord_id:
+            return jsonify({'success': False, 'error': 'Discord ID required'}), 400
+
+        if not discord_id.isdigit():
+            return jsonify({'success': False, 'error': 'Invalid Discord ID'}), 400
+
+        if not is_discord_member(discord_id):
+            return jsonify({'success': False, 'error': 'Please join the Discord server and try again'}), 403
+
+        trial = db.create_trial(discord_id, request.remote_addr, hours=24)
+        if not trial:
+            return jsonify({'success': False, 'error': 'Failed to create trial'}), 500
+
+        try:
+            db.log_event('trial_created', discord_id, request.remote_addr, f"Trial key: {trial.get('key')}")
+        except Exception:
+            pass
+
+        return jsonify({
+            'success': True,
+            'key': trial.get('key'),
+            'expires_at': trial.get('expires_at')
+        })
+    except Exception as e:
+        log.error(f"Trial start error: {e}")
+        return jsonify({'success': False, 'error': 'Trial creation failed'}), 500
 
 # ==============================================================================
 # 👤 USER DASHBOARD ROUTES
@@ -544,10 +627,26 @@ def api_verify():
     # Get user
     user = db.get_user(user_id)
     if not user:
+        # Check trial key if user not registered
+        trial = db.get_trial_by_key(key)
+        if trial and str(trial.get('discord_id')) == str(user_id):
+            expires_at = trial.get('expires_at')
+            if expires_at and datetime.fromisoformat(expires_at) <= datetime.now(UTC):
+                return jsonify({"success": False, "error": "Trial expired"}), 403
+            db.log_event("trial_auth", user_id, request.remote_addr, "Trial authentication")
+            return jsonify({"success": True, "message": "Trial Authenticated", "user_id": user_id, "trial": True})
         return jsonify({"success": False, "error": "User not registered"}), 404
         
     # Verify key
     if user.get('key') != key:
+        # Allow trial key for registered users too
+        trial = db.get_trial_by_key(key)
+        if trial and str(trial.get('discord_id')) == str(user_id):
+            expires_at = trial.get('expires_at')
+            if expires_at and datetime.fromisoformat(expires_at) <= datetime.now(UTC):
+                return jsonify({"success": False, "error": "Trial expired"}), 403
+            db.log_event("trial_auth", user_id, request.remote_addr, "Trial authentication")
+            return jsonify({"success": True, "message": "Trial Authenticated", "user_id": user_id, "trial": True})
         return jsonify({"success": False, "error": "Invalid license key"}), 403
         
     # Logic for HWID could be added here if needed

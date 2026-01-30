@@ -1,1002 +1,54 @@
--- Banana Hub Platinum Loader
--- Premium Roblox Loader Script v3.0
+-- Banana Hub Loader (Modern UI + Landing)
+-- v4.2
 
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 
 local player = Players.LocalPlayer
-local mouse = player:GetMouse()
 
--- Configuration (Injected by server or default)
-local API_URL = "[[API_URL]]" -- Server will replace this placeholder
+local API_URL = "[[API_URL]]"
+local DEFAULT_API_URL = "https://banana-hub.onrender.com"
 
--- UI Constants - Enhanced Color Palette
 local COLORS = {
-    Background = Color3.fromHex("#08080a"),
-    BackgroundAlt = Color3.fromHex("#0f0f12"),
-    Glass = Color3.fromHex("#141418"),
-    GlassLight = Color3.fromHex("#1c1c22"),
-    GlassBright = Color3.fromHex("#252530"),
-    Accent = Color3.fromHex("#FACC15"),
-    AccentDark = Color3.fromHex("#B8960F"),
-    AccentGlow = Color3.fromHex("#FDE68A"),
-    AccentSoft = Color3.fromHex("#FEF3C7"),
-    Secondary = Color3.fromHex("#8B5CF6"),
-    SecondaryGlow = Color3.fromHex("#A78BFA"),
-    Text = Color3.fromHex("#FAFAFA"),
-    TextDim = Color3.fromHex("#A1A1AA"),
-    TextMuted = Color3.fromHex("#71717A"),
-    TextDark = Color3.fromHex("#52525B"),
-    Error = Color3.fromHex("#F87171"),
-    ErrorDark = Color3.fromHex("#DC2626"),
-    Success = Color3.fromHex("#4ADE80"),
-    SuccessGlow = Color3.fromHex("#86EFAC"),
-    Border = Color3.fromHex("#27272A"),
-    BorderLight = Color3.fromHex("#3f3f46")
+    Bg = Color3.fromHex("#0b0c10"),
+    Bg2 = Color3.fromHex("#10141c"),
+    Panel = Color3.fromHex("#141822"),
+    PanelHi = Color3.fromHex("#1a2030"),
+    Accent = Color3.fromHex("#f5c400"),
+    Accent2 = Color3.fromHex("#ff8a00"),
+    Text = Color3.fromHex("#f8fafc"),
+    Muted = Color3.fromHex("#9aa4b2"),
+    Border = Color3.fromHex("#2a2f3a"),
+    Error = Color3.fromHex("#ef4444"),
+    Success = Color3.fromHex("#22c55e")
 }
 
--- 16:9 Dimensions
-local FRAME_WIDTH = 720
-local FRAME_HEIGHT = 405
-
--- Create UI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BananaHubLoader"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.IgnoreGuiInset = true
-
--- Try to put in CoreGui if possible, otherwise PlayerGui
-local success, err = pcall(function()
-    ScreenGui.Parent = CoreGui
-end)
-if not success then
-    ScreenGui.Parent = player:WaitForChild("PlayerGui")
-end
-
--- Add blur effect
-local blur = Instance.new("BlurEffect")
-blur.Name = "BananaHubBlur"
-blur.Size = 0
-blur.Parent = Lighting
-
--- --- UI UTILS ---
 local function createCorner(parent, radius)
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 12)
+    corner.CornerRadius = UDim.new(0, radius or 10)
     corner.Parent = parent
     return corner
 end
 
 local function createStroke(parent, color, thickness, transparency)
     local stroke = Instance.new("UIStroke")
-    stroke.Color = color or COLORS.Accent
+    stroke.Color = color or COLORS.Border
     stroke.Thickness = thickness or 1
-    stroke.Transparency = transparency or 0.8
-    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Transparency = transparency or 0
     stroke.Parent = parent
     return stroke
 end
 
-local function createGradient(parent, colorA, colorB, rotation)
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, colorA),
-        ColorSequenceKeypoint.new(1, colorB)
-    })
-    gradient.Rotation = rotation or 90
-    gradient.Parent = parent
-    return gradient
-end
-
-local function createMultiGradient(parent, keypoints, rotation)
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new(keypoints)
-    gradient.Rotation = rotation or 90
-    gradient.Parent = parent
-    return gradient
-end
-
-local function createPadding(parent, top, bottom, left, right)
-    local uiPadding = Instance.new("UIPadding")
-    uiPadding.PaddingTop = UDim.new(0, top or 0)
-    uiPadding.PaddingBottom = UDim.new(0, bottom or top or 0)
-    uiPadding.PaddingLeft = UDim.new(0, left or top or 0)
-    uiPadding.PaddingRight = UDim.new(0, right or left or top or 0)
-    uiPadding.Parent = parent
-    return uiPadding
-end
-
-local function createShadow(parent, size, transparency)
-    local shadow = Instance.new("ImageLabel")
-    shadow.Name = "Shadow"
-    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    shadow.BackgroundTransparency = 1
-    shadow.Position = UDim2.new(0.5, 0, 0.5, 6)
-    shadow.Size = UDim2.new(1, size or 80, 1, size or 80)
-    shadow.ZIndex = math.max(1, parent.ZIndex - 1)
-    shadow.Image = "rbxassetid://6015667343"
-    shadow.ImageColor3 = Color3.new(0, 0, 0)
-    shadow.ImageTransparency = transparency or 0.35
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(49, 49, 450, 450)
-    shadow.Parent = parent
-    return shadow
-end
-
-local function createGlow(parent, color, size)
-    local glow = Instance.new("ImageLabel")
-    glow.Name = "Glow"
-    glow.AnchorPoint = Vector2.new(0.5, 0.5)
-    glow.BackgroundTransparency = 1
-    glow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    glow.Size = UDim2.new(1, size or 100, 1, size or 100)
-    glow.ZIndex = math.max(1, parent.ZIndex - 1)
-    glow.Image = "rbxassetid://5028857084"
-    glow.ImageColor3 = color or COLORS.Accent
-    glow.ImageTransparency = 0.85
-    glow.Parent = parent
-    return glow
-end
-
-local function createList(parent, padding, direction, alignment)
-    local list = Instance.new("UIListLayout")
-    list.Padding = UDim.new(0, padding or 8)
-    list.FillDirection = direction or Enum.FillDirection.Vertical
-    list.HorizontalAlignment = alignment or Enum.HorizontalAlignment.Center
-    list.SortOrder = Enum.SortOrder.LayoutOrder
-    list.Parent = parent
-    return list
-end
-
--- Background Overlay with gradient
-local BlurOverlay = Instance.new("Frame")
-BlurOverlay.Name = "BlurOverlay"
-BlurOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
-BlurOverlay.BackgroundTransparency = 1
-BlurOverlay.Size = UDim2.new(1, 0, 1, 0)
-BlurOverlay.ZIndex = 1
-BlurOverlay.Parent = ScreenGui
-
-local overlayGradient = Instance.new("UIGradient")
-overlayGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromHex("#0a0a0f")),
-    ColorSequenceKeypoint.new(0.5, Color3.fromHex("#000000")),
-    ColorSequenceKeypoint.new(1, Color3.fromHex("#0a0512"))
-})
-overlayGradient.Rotation = 45
-overlayGradient.Parent = BlurOverlay
-
--- Animated background orbs (contained within overlay)
-local OrbsContainer = Instance.new("Frame")
-OrbsContainer.Name = "Orbs"
-OrbsContainer.BackgroundTransparency = 1
-OrbsContainer.Size = UDim2.new(1, 0, 1, 0)
-OrbsContainer.ClipsDescendants = true
-OrbsContainer.ZIndex = 1
-OrbsContainer.Parent = BlurOverlay
-
-local function createOrb(position, color, size, duration)
-    local orb = Instance.new("Frame")
-    orb.Name = "Orb"
-    orb.AnchorPoint = Vector2.new(0.5, 0.5)
-    orb.BackgroundColor3 = color
-    orb.BackgroundTransparency = 0.97
-    orb.Position = position
-    orb.Size = UDim2.new(0, size, 0, size)
-    orb.ZIndex = 1
-    orb.Parent = OrbsContainer
-    createCorner(orb, size/2)
-    
-    -- Glow effect
-    local orbGlow = Instance.new("ImageLabel")
-    orbGlow.BackgroundTransparency = 1
-    orbGlow.Size = UDim2.new(1.5, 0, 1.5, 0)
-    orbGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-    orbGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
-    orbGlow.Image = "rbxassetid://5028857084"
-    orbGlow.ImageColor3 = color
-    orbGlow.ImageTransparency = 0.93
-    orbGlow.ZIndex = 1
-    orbGlow.Parent = orb
-    
-    return orb, duration
-end
-
-local orbs = {
-    createOrb(UDim2.new(0.2, 0, 0.3, 0), COLORS.Accent, 200, 8),
-    createOrb(UDim2.new(0.8, 0, 0.7, 0), COLORS.Secondary, 180, 10),
-    createOrb(UDim2.new(0.5, 0, 0.25, 0), COLORS.AccentGlow, 150, 12),
-}
-
--- Animate orbs
-task.spawn(function()
-    while ScreenGui.Parent do
-        for i, orbData in ipairs(orbs) do
-            local orb, duration = orbData[1], orbData[2]
-            if orb and orb.Parent then
-                local newPos = UDim2.new(
-                    math.random(10, 90) / 100,
-                    0,
-                    math.random(10, 90) / 100,
-                    0
-                )
-                TweenService:Create(orb, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    Position = newPos,
-                    BackgroundTransparency = math.random(95, 98) / 100
-                }):Play()
-            end
-        end
-        task.wait(math.random(6, 10))
-    end
-end)
-
--- Main Container - 16:9 aspect ratio
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.BackgroundColor3 = COLORS.Background
-MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-MainFrame.Size = UDim2.new(0, FRAME_WIDTH, 0, FRAME_HEIGHT)
-MainFrame.ClipsDescendants = true
-MainFrame.ZIndex = 5
-MainFrame.Parent = ScreenGui
-
-createCorner(MainFrame, 20)
-createShadow(MainFrame, 120, 0.25)
-
--- Multiple glow layers for depth
-local MainGlow1 = createGlow(MainFrame, COLORS.Accent, 300)
-MainGlow1.ImageTransparency = 0.94
-local MainGlow2 = createGlow(MainFrame, COLORS.Secondary, 200)
-MainGlow2.ImageTransparency = 0.96
-MainGlow2.Position = UDim2.new(0.7, 0, 0.3, 0)
-
--- Inner border frame for depth
-local InnerBorder = Instance.new("Frame")
-InnerBorder.Name = "InnerBorder"
-InnerBorder.BackgroundTransparency = 1
-InnerBorder.Size = UDim2.new(1, 0, 1, 0)
-InnerBorder.ZIndex = 6
-InnerBorder.Parent = MainFrame
-createCorner(InnerBorder, 20)
-local borderStroke = createStroke(InnerBorder, COLORS.Border, 1.5, 0.4)
-
--- Top accent line with animated gradient
-local AccentLine = Instance.new("Frame")
-AccentLine.Name = "AccentLine"
-AccentLine.BackgroundColor3 = Color3.new(1, 1, 1)
-AccentLine.BorderSizePixel = 0
-AccentLine.Position = UDim2.new(0, 0, 0, 0)
-AccentLine.Size = UDim2.new(1, 0, 0, 3)
-AccentLine.ZIndex = 10
-AccentLine.Parent = MainFrame
-
-local accentGradient = createMultiGradient(AccentLine, {
-    ColorSequenceKeypoint.new(0, COLORS.AccentDark),
-    ColorSequenceKeypoint.new(0.3, COLORS.Accent),
-    ColorSequenceKeypoint.new(0.5, COLORS.AccentGlow),
-    ColorSequenceKeypoint.new(0.7, COLORS.Secondary),
-    ColorSequenceKeypoint.new(1, COLORS.SecondaryGlow)
-}, 0)
-
--- Animate the gradient
-task.spawn(function()
-    local offset = 0
-    while ScreenGui.Parent do
-        offset = (offset + 0.005) % 1
-        accentGradient.Offset = Vector2.new(offset, 0)
-        task.wait(0.03)
-    end
-end)
-
--- Noise texture overlay
-local NoiseOverlay = Instance.new("ImageLabel")
-NoiseOverlay.Name = "Noise"
-NoiseOverlay.BackgroundTransparency = 1
-NoiseOverlay.Size = UDim2.new(1, 0, 1, 0)
-NoiseOverlay.Image = "rbxassetid://8137712066"
-NoiseOverlay.ImageColor3 = Color3.new(1, 1, 1)
-NoiseOverlay.ImageTransparency = 0.97
-NoiseOverlay.ScaleType = Enum.ScaleType.Tile
-NoiseOverlay.TileSize = UDim2.new(0, 128, 0, 128)
-NoiseOverlay.ZIndex = 4
-NoiseOverlay.Parent = MainFrame
-
--- Animated particles container
-local ParticlesFrame = Instance.new("Frame")
-ParticlesFrame.Name = "Particles"
-ParticlesFrame.BackgroundTransparency = 1
-ParticlesFrame.Size = UDim2.new(1, 0, 1, 0)
-ParticlesFrame.ClipsDescendants = true
-ParticlesFrame.ZIndex = 5
-ParticlesFrame.Parent = MainFrame
-
--- Create floating particles with variety
-local particles = {}
-for i = 1, 20 do
-    local particle = Instance.new("Frame")
-    particle.Name = "Particle" .. i
-    particle.BackgroundColor3 = i % 3 == 0 and COLORS.Secondary or COLORS.Accent
-    particle.BackgroundTransparency = math.random(85, 95) / 100
-    particle.Position = UDim2.new(math.random() * 0.9 + 0.05, 0, math.random() * 0.9 + 0.05, 0)
-    local pSize = math.random(2, 5)
-    particle.Size = UDim2.new(0, pSize, 0, pSize)
-    particle.ZIndex = 5
-    particle.Parent = ParticlesFrame
-    createCorner(particle, 10)
-    table.insert(particles, particle)
-end
-
--- Animate particles
-task.spawn(function()
-    while ScreenGui.Parent do
-        for _, particle in ipairs(particles) do
-            local targetPos = UDim2.new(math.random() * 0.9 + 0.05, 0, math.random() * 0.9 + 0.05, 0)
-            TweenService:Create(particle, TweenInfo.new(math.random(5, 12), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                Position = targetPos,
-                BackgroundTransparency = math.random(85, 96) / 100
-            }):Play()
-        end
-        task.wait(math.random(4, 7))
-    end
-end)
-
--- Dragging Logic
-local dragging, dragInput, dragStart, startPos
-MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        TweenService:Create(MainFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quart), {Size = UDim2.new(0, FRAME_WIDTH + 6, 0, FRAME_HEIGHT + 4)}):Play()
-    end
-end)
-
-MainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-        TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Back), {Size = UDim2.new(0, FRAME_WIDTH, 0, FRAME_HEIGHT)}):Play()
-    end
-end)
-
--- ============================================
--- LOADING SCREEN (Left-aligned for 16:9)
--- ============================================
-local LoadingFrame = Instance.new("Frame")
-LoadingFrame.Name = "LoadingFrame"
-LoadingFrame.BackgroundTransparency = 1
-LoadingFrame.Size = UDim2.new(1, 0, 1, 0)
-LoadingFrame.ZIndex = 15
-LoadingFrame.Parent = MainFrame
-
--- Animated ring behind logo
-local RingContainer = Instance.new("Frame")
-RingContainer.Name = "RingContainer"
-RingContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-RingContainer.BackgroundTransparency = 1
-RingContainer.Position = UDim2.new(0.5, 0, 0.42, 0)
-RingContainer.Size = UDim2.new(0, 160, 0, 160)
-RingContainer.ZIndex = 15
-RingContainer.Parent = LoadingFrame
-
--- Outer spinning ring
-local OuterRing = Instance.new("ImageLabel")
-OuterRing.Name = "OuterRing"
-OuterRing.AnchorPoint = Vector2.new(0.5, 0.5)
-OuterRing.BackgroundTransparency = 1
-OuterRing.Position = UDim2.new(0.5, 0, 0.5, 0)
-OuterRing.Size = UDim2.new(0, 140, 0, 140)
-OuterRing.Image = "rbxassetid://7669135072"
-OuterRing.ImageColor3 = COLORS.Accent
-OuterRing.ImageTransparency = 0.3
-OuterRing.ZIndex = 15
-OuterRing.Parent = RingContainer
-
--- Inner spinning ring (opposite direction)
-local InnerRing = Instance.new("ImageLabel")
-InnerRing.Name = "InnerRing"
-InnerRing.AnchorPoint = Vector2.new(0.5, 0.5)
-InnerRing.BackgroundTransparency = 1
-InnerRing.Position = UDim2.new(0.5, 0, 0.5, 0)
-InnerRing.Size = UDim2.new(0, 110, 0, 110)
-InnerRing.Image = "rbxassetid://7669135072"
-InnerRing.ImageColor3 = COLORS.Secondary
-InnerRing.ImageTransparency = 0.5
-InnerRing.ZIndex = 15
-InnerRing.Parent = RingContainer
-
--- Logo glow
-local LogoGlow = Instance.new("ImageLabel")
-LogoGlow.Name = "LogoGlow"
-LogoGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-LogoGlow.BackgroundTransparency = 1
-LogoGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
-LogoGlow.Size = UDim2.new(0, 180, 0, 180)
-LogoGlow.Image = "rbxassetid://5028857084"
-LogoGlow.ImageColor3 = COLORS.Accent
-LogoGlow.ImageTransparency = 0.7
-LogoGlow.ZIndex = 14
-LogoGlow.Parent = RingContainer
-
--- Logo
-local Logo = Instance.new("ImageLabel")
-Logo.Name = "Logo"
-Logo.AnchorPoint = Vector2.new(0.5, 0.5)
-Logo.BackgroundTransparency = 1
-Logo.Position = UDim2.new(0.5, 0, 0.5, 0)
-Logo.Size = UDim2.new(0, 65, 0, 65)
-Logo.Image = "rbxassetid://13192004240"
-Logo.ImageColor3 = COLORS.Accent
-Logo.ZIndex = 16
-Logo.Parent = RingContainer
-
--- Animate rings spinning
-task.spawn(function()
-    local rotation = 0
-    while LoadingFrame.Visible and ScreenGui.Parent do
-        rotation = rotation + 1
-        OuterRing.Rotation = rotation
-        InnerRing.Rotation = -rotation * 1.5
-        task.wait(0.02)
-    end
-end)
-
--- Pulsing logo animation
-task.spawn(function()
-    while LoadingFrame.Visible and ScreenGui.Parent do
-        TweenService:Create(Logo, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-            Size = UDim2.new(0, 72, 0, 72)
-        }):Play()
-        TweenService:Create(LogoGlow, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-            ImageTransparency = 0.5,
-            Size = UDim2.new(0, 200, 0, 200)
-        }):Play()
-        task.wait(1)
-        TweenService:Create(Logo, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-            Size = UDim2.new(0, 65, 0, 65)
-        }):Play()
-        TweenService:Create(LogoGlow, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-            ImageTransparency = 0.7,
-            Size = UDim2.new(0, 180, 0, 180)
-        }):Play()
-        task.wait(1)
-    end
-end)
-
--- Title text
-local LoadingTitle = Instance.new("TextLabel")
-LoadingTitle.Name = "LoadingTitle"
-LoadingTitle.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingTitle.BackgroundTransparency = 1
-LoadingTitle.Position = UDim2.new(0.5, 0, 0.68, 0)
-LoadingTitle.Size = UDim2.new(1, 0, 0, 40)
-LoadingTitle.Font = Enum.Font.GothamBlack
-LoadingTitle.Text = "BANANA HUB"
-LoadingTitle.TextColor3 = COLORS.Text
-LoadingTitle.TextSize = 32
-LoadingTitle.ZIndex = 15
-LoadingTitle.Parent = LoadingFrame
-
-local LoadingSubtitle = Instance.new("TextLabel")
-LoadingSubtitle.Name = "LoadingSubtitle"
-LoadingSubtitle.AnchorPoint = Vector2.new(0.5, 0.5)
-LoadingSubtitle.BackgroundTransparency = 1
-LoadingSubtitle.Position = UDim2.new(0.5, 0, 0.75, 0)
-LoadingSubtitle.Size = UDim2.new(1, 0, 0, 20)
-LoadingSubtitle.Font = Enum.Font.GothamMedium
-LoadingSubtitle.Text = "✦ Premium  ✦"
-LoadingSubtitle.TextColor3 = COLORS.Accent
-LoadingSubtitle.TextSize = 13
-LoadingSubtitle.ZIndex = 15
-LoadingSubtitle.Parent = LoadingFrame
-
--- Progress bar container
-local ProgressContainer = Instance.new("Frame")
-ProgressContainer.Name = "ProgressContainer"
-ProgressContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-ProgressContainer.BackgroundColor3 = COLORS.Glass
-ProgressContainer.Position = UDim2.new(0.5, 0, 0.86, 0)
-ProgressContainer.Size = UDim2.new(0, 320, 0, 8)
-ProgressContainer.ZIndex = 15
-ProgressContainer.Parent = LoadingFrame
-createCorner(ProgressContainer, 4)
-createStroke(ProgressContainer, COLORS.Border, 1, 0.7)
-
-local Fill = Instance.new("Frame")
-Fill.Name = "Fill"
-Fill.BackgroundColor3 = COLORS.Accent
-Fill.Size = UDim2.new(0, 0, 1, 0)
-Fill.ZIndex = 16
-Fill.Parent = ProgressContainer
-createCorner(Fill, 4)
-
--- Animated gradient on fill
-local fillGradient = createMultiGradient(Fill, {
-    ColorSequenceKeypoint.new(0, COLORS.AccentDark),
-    ColorSequenceKeypoint.new(0.5, COLORS.Accent),
-    ColorSequenceKeypoint.new(1, COLORS.AccentGlow)
-}, 0)
-
--- Shimmer effect on progress bar
-local Shimmer = Instance.new("Frame")
-Shimmer.Name = "Shimmer"
-Shimmer.BackgroundColor3 = Color3.new(1, 1, 1)
-Shimmer.BackgroundTransparency = 0.7
-Shimmer.Size = UDim2.new(0.3, 0, 1, 0)
-Shimmer.Position = UDim2.new(-0.3, 0, 0, 0)
-Shimmer.ZIndex = 17
-Shimmer.Parent = Fill
-createCorner(Shimmer, 4)
-
-task.spawn(function()
-    while ScreenGui.Parent do
-        Shimmer.Position = UDim2.new(-0.3, 0, 0, 0)
-        TweenService:Create(Shimmer, TweenInfo.new(1.5, Enum.EasingStyle.Sine), {Position = UDim2.new(1, 0, 0, 0)}):Play()
-        task.wait(2)
-    end
-end)
-
--- Progress percentage
-local ProgressPercent = Instance.new("TextLabel")
-ProgressPercent.Name = "ProgressPercent"
-ProgressPercent.AnchorPoint = Vector2.new(1, 0.5)
-ProgressPercent.BackgroundTransparency = 1
-ProgressPercent.Position = UDim2.new(1, 10, 0.5, 0)
-ProgressPercent.Size = UDim2.new(0, 50, 0, 20)
-ProgressPercent.Font = Enum.Font.GothamBold
-ProgressPercent.Text = "0%"
-ProgressPercent.TextColor3 = COLORS.Accent
-ProgressPercent.TextSize = 12
-ProgressPercent.TextXAlignment = Enum.TextXAlignment.Left
-ProgressPercent.ZIndex = 15
-ProgressPercent.Parent = ProgressContainer
-
--- Progress status text
-local ProgressText = Instance.new("TextLabel")
-ProgressText.Name = "ProgressText"
-ProgressText.AnchorPoint = Vector2.new(0.5, 0.5)
-ProgressText.BackgroundTransparency = 1
-ProgressText.Position = UDim2.new(0.5, 0, 0.93, 0)
-ProgressText.Size = UDim2.new(1, 0, 0, 20)
-ProgressText.Font = Enum.Font.Gotham
-ProgressText.Text = "Initializing..."
-ProgressText.TextColor3 = COLORS.TextMuted
-ProgressText.TextSize = 11
-ProgressText.ZIndex = 15
-ProgressText.Parent = LoadingFrame
-
--- ============================================
--- LOGIN SCREEN (Split layout for 16:9)
--- ============================================
-local LoginFrame = Instance.new("Frame")
-LoginFrame.Name = "LoginFrame"
-LoginFrame.BackgroundTransparency = 1
-LoginFrame.Size = UDim2.new(1, 0, 1, 0)
-LoginFrame.Visible = false
-LoginFrame.ZIndex = 15
-LoginFrame.Parent = MainFrame
-
--- Left Panel (Branding)
-local LeftPanel = Instance.new("Frame")
-LeftPanel.Name = "LeftPanel"
-LeftPanel.BackgroundColor3 = COLORS.BackgroundAlt
-LeftPanel.Size = UDim2.new(0.42, 0, 1, 0)
-LeftPanel.ZIndex = 15
-LeftPanel.Parent = LoginFrame
-
-local leftGradient = createGradient(LeftPanel, COLORS.Background, COLORS.BackgroundAlt, 135)
-
--- Left panel content container
-local LeftContent = Instance.new("Frame")
-LeftContent.Name = "LeftContent"
-LeftContent.BackgroundTransparency = 1
-LeftContent.AnchorPoint = Vector2.new(0.5, 0.5)
-LeftContent.Position = UDim2.new(0.5, 0, 0.5, 0)
-LeftContent.Size = UDim2.new(0.85, 0, 0.85, 0)
-LeftContent.ZIndex = 15
-LeftContent.Parent = LeftPanel
-
--- Brand logo container
-local BrandLogo = Instance.new("Frame")
-BrandLogo.Name = "BrandLogo"
-BrandLogo.BackgroundTransparency = 1
-BrandLogo.Size = UDim2.new(1, 0, 0, 90)
-BrandLogo.ZIndex = 15
-BrandLogo.Parent = LeftContent
-
-local BrandIcon = Instance.new("ImageLabel")
-BrandIcon.Name = "BrandIcon"
-BrandIcon.BackgroundTransparency = 1
-BrandIcon.Size = UDim2.new(0, 55, 0, 55)
-BrandIcon.Image = "rbxassetid://13192004240"
-BrandIcon.ImageColor3 = COLORS.Accent
-BrandIcon.ZIndex = 15
-BrandIcon.Parent = BrandLogo
-
-local BrandIconGlow = createGlow(BrandIcon, COLORS.Accent, 50)
-BrandIconGlow.ImageTransparency = 0.7
-
-local BrandName = Instance.new("TextLabel")
-BrandName.Name = "BrandName"
-BrandName.BackgroundTransparency = 1
-BrandName.Position = UDim2.new(0, 65, 0, 8)
-BrandName.Size = UDim2.new(1, -70, 0, 28)
-BrandName.Font = Enum.Font.GothamBlack
-BrandName.Text = "BANANA HUB"
-BrandName.TextColor3 = COLORS.Text
-BrandName.TextSize = 22
-BrandName.TextXAlignment = Enum.TextXAlignment.Left
-BrandName.ZIndex = 15
-BrandName.Parent = BrandLogo
-
-local BrandTag = Instance.new("TextLabel")
-BrandTag.Name = "BrandTag"
-BrandTag.BackgroundTransparency = 1
-BrandTag.Position = UDim2.new(0, 65, 0, 36)
-BrandTag.Size = UDim2.new(1, -70, 0, 18)
-BrandTag.Font = Enum.Font.GothamMedium
-BrandTag.Text = "Premium'/"
-BrandTag.TextColor3 = COLORS.Accent
-BrandTag.TextSize = 12
-BrandTag.TextXAlignment = Enum.TextXAlignment.Left
-BrandTag.ZIndex = 15
-BrandTag.Parent = BrandLogo
-
--- Tagline
-local Tagline = Instance.new("TextLabel")
-Tagline.Name = "Tagline"
-Tagline.BackgroundTransparency = 1
-Tagline.Position = UDim2.new(0, 0, 0, 100)
-Tagline.Size = UDim2.new(1, 0, 0, 60)
-Tagline.Font = Enum.Font.GothamBold
-Tagline.Text = "Premium Features.\nUnlimited Power."
-Tagline.TextColor3 = COLORS.TextDim
-Tagline.TextSize = 18
-Tagline.TextXAlignment = Enum.TextXAlignment.Left
-Tagline.TextYAlignment = Enum.TextYAlignment.Top
-Tagline.LineHeight = 1.4
-Tagline.ZIndex = 15
-Tagline.Parent = LeftContent
-
--- Feature list
-local Features = Instance.new("Frame")
-Features.Name = "Features"
-Features.BackgroundTransparency = 1
-Features.Position = UDim2.new(0, 0, 0, 175)
-Features.Size = UDim2.new(1, 0, 0, 160)
-Features.ZIndex = 15
-Features.Parent = LeftContent
-
-local featureList = {
-    {icon = "⚡", text = "Lightning Fast Execution"},
-    {icon = "🛡️", text = "Anti-Detection System"},
-    {icon = "🎮", text = "Universal Game Support"},
-    {icon = "🔄", text = "Auto-Updates Included"}
-}
-
-for i, feature in ipairs(featureList) do
-    local featureFrame = Instance.new("Frame")
-    featureFrame.Name = "Feature" .. i
-    featureFrame.BackgroundTransparency = 1
-    featureFrame.Position = UDim2.new(0, 0, 0, (i - 1) * 34)
-    featureFrame.Size = UDim2.new(1, 0, 0, 30)
-    featureFrame.ZIndex = 15
-    featureFrame.Parent = Features
-    
-    local featureIcon = Instance.new("TextLabel")
-    featureIcon.BackgroundTransparency = 1
-    featureIcon.Size = UDim2.new(0, 24, 1, 0)
-    featureIcon.Font = Enum.Font.GothamMedium
-    featureIcon.Text = feature.icon
-    featureIcon.TextSize = 14
-    featureIcon.ZIndex = 15
-    featureIcon.Parent = featureFrame
-    
-    local featureText = Instance.new("TextLabel")
-    featureText.BackgroundTransparency = 1
-    featureText.Position = UDim2.new(0, 28, 0, 0)
-    featureText.Size = UDim2.new(1, -28, 1, 0)
-    featureText.Font = Enum.Font.Gotham
-    featureText.Text = feature.text
-    featureText.TextColor3 = COLORS.TextMuted
-    featureText.TextSize = 12
-    featureText.TextXAlignment = Enum.TextXAlignment.Left
-    featureText.ZIndex = 15
-    featureText.Parent = featureFrame
-end
-
--- Right Panel (Login Form)
-local RightPanel = Instance.new("Frame")
-RightPanel.Name = "RightPanel"
-RightPanel.BackgroundTransparency = 1
-RightPanel.Position = UDim2.new(0.42, 0, 0, 0)
-RightPanel.Size = UDim2.new(0.58, 0, 1, 0)
-RightPanel.ZIndex = 15
-RightPanel.Parent = LoginFrame
-
--- Close button
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Name = "CloseBtn"
-CloseBtn.AnchorPoint = Vector2.new(1, 0)
-CloseBtn.BackgroundColor3 = COLORS.Glass
-CloseBtn.Position = UDim2.new(1, -20, 0, 20)
-CloseBtn.Size = UDim2.new(0, 36, 0, 36)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = COLORS.TextMuted
-CloseBtn.TextSize = 16
-CloseBtn.AutoButtonColor = false
-CloseBtn.ZIndex = 20
-CloseBtn.Parent = RightPanel
-createCorner(CloseBtn, 10)
-createStroke(CloseBtn, COLORS.Border, 1, 0.7)
-
-CloseBtn.MouseEnter:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.ErrorDark, TextColor3 = COLORS.Text}):Play()
-end)
-
-CloseBtn.MouseLeave:Connect(function()
-    TweenService:Create(CloseBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Glass, TextColor3 = COLORS.TextMuted}):Play()
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    TweenService:Create(blur, TweenInfo.new(0.4), {Size = 0}):Play()
-    local fade = TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1
-    })
-    TweenService:Create(BlurOverlay, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
-    for _, orb in ipairs(orbs) do
-        if orb[1] then TweenService:Create(orb[1], TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play() end
-    end
-    fade:Play()
-    fade.Completed:Wait()
-    blur:Destroy()
-    ScreenGui:Destroy()
-end)
-
--- Form container
-local FormContainer = Instance.new("Frame")
-FormContainer.Name = "FormContainer"
-FormContainer.BackgroundTransparency = 1
-FormContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-FormContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
-FormContainer.Size = UDim2.new(0.82, 0, 0.88, 0)
-FormContainer.ZIndex = 15
-FormContainer.Parent = RightPanel
-
--- Header
-local FormHeader = Instance.new("Frame")
-FormHeader.Name = "FormHeader"
-FormHeader.BackgroundTransparency = 1
-FormHeader.Size = UDim2.new(1, 0, 0, 65)
-FormHeader.ZIndex = 15
-FormHeader.Parent = FormContainer
-
-local WelcomeText = Instance.new("TextLabel")
-WelcomeText.Name = "WelcomeText"
-WelcomeText.BackgroundTransparency = 1
-WelcomeText.Size = UDim2.new(1, 0, 0, 30)
-WelcomeText.Font = Enum.Font.GothamBlack
-WelcomeText.Text = "Welcome Back"
-WelcomeText.TextColor3 = COLORS.Text
-WelcomeText.TextSize = 24
-WelcomeText.TextXAlignment = Enum.TextXAlignment.Left
-WelcomeText.ZIndex = 15
-WelcomeText.Parent = FormHeader
-
-local SubText = Instance.new("TextLabel")
-SubText.Name = "SubText"
-SubText.BackgroundTransparency = 1
-SubText.Position = UDim2.new(0, 0, 0, 32)
-SubText.Size = UDim2.new(1, 0, 0, 18)
-SubText.Font = Enum.Font.Gotham
-SubText.Text = "Enter your credentials to access premium features"
-SubText.TextColor3 = COLORS.TextMuted
-SubText.TextSize = 12
-SubText.TextXAlignment = Enum.TextXAlignment.Left
-SubText.ZIndex = 15
-SubText.Parent = FormHeader
-
--- Input Fields
-local function createInput(name, placeholder, position, icon)
-    local container = Instance.new("Frame")
-    container.Name = name .. "Container"
-    container.BackgroundColor3 = COLORS.Glass
-    container.Position = position
-    container.Size = UDim2.new(1, 0, 0, 50)
-    container.ZIndex = 15
-    container.Parent = FormContainer
-    
-    createCorner(container, 12)
-    local stroke = createStroke(container, COLORS.Border, 1.5, 0.5)
-    
-    local label = Instance.new("TextLabel")
-    label.Name = "Label"
-    label.BackgroundTransparency = 1
-    label.Position = UDim2.new(0, 0, 0, -22)
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.Font = Enum.Font.GothamBold
-    label.Text = name:upper()
-    label.TextColor3 = COLORS.TextMuted
-    label.TextSize = 10
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.ZIndex = 15
-    label.Parent = container
-
-    -- Icon background
-    local iconBg = Instance.new("Frame")
-    iconBg.Name = "IconBg"
-    iconBg.BackgroundColor3 = COLORS.GlassLight
-    iconBg.Position = UDim2.new(0, 8, 0.5, -16)
-    iconBg.Size = UDim2.new(0, 32, 0, 32)
-    iconBg.ZIndex = 15
-    iconBg.Parent = container
-    createCorner(iconBg, 8)
-
-    local iconLabel = Instance.new("TextLabel")
-    iconLabel.Name = "Icon"
-    iconLabel.BackgroundTransparency = 1
-    iconLabel.Size = UDim2.new(1, 0, 1, 0)
-    iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.Text = icon or "👤"
-    iconLabel.TextColor3 = COLORS.TextDim
-    iconLabel.TextSize = 14
-    iconLabel.ZIndex = 15
-    iconLabel.Parent = iconBg
-
-    local input = Instance.new("TextBox")
-    input.Name = "Input"
-    input.BackgroundTransparency = 1
-    input.Position = UDim2.new(0, 50, 0, 0)
-    input.Size = UDim2.new(1, -60, 1, 0)
-    input.Font = Enum.Font.GothamMedium
-    input.PlaceholderText = placeholder
-    input.PlaceholderColor3 = COLORS.TextDark
-    input.Text = ""
-    input.TextColor3 = COLORS.Text
-    input.TextSize = 13
-    input.TextXAlignment = Enum.TextXAlignment.Left
-    input.ClearTextOnFocus = false
-    input.ZIndex = 15
-    input.Parent = container
-    
-    -- Focus animations
-    input.Focused:Connect(function()
-        TweenService:Create(stroke, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {Color = COLORS.Accent, Transparency = 0.2}):Play()
-        TweenService:Create(container, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {BackgroundColor3 = COLORS.GlassLight}):Play()
-        TweenService:Create(iconBg, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Accent}):Play()
-        TweenService:Create(iconLabel, TweenInfo.new(0.2), {TextColor3 = Color3.new(0, 0, 0)}):Play()
-    end)
-    
-    input.FocusLost:Connect(function()
-        TweenService:Create(stroke, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {Color = COLORS.Border, Transparency = 0.5}):Play()
-        TweenService:Create(container, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {BackgroundColor3 = COLORS.Glass}):Play()
-        TweenService:Create(iconBg, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.GlassLight}):Play()
-        TweenService:Create(iconLabel, TweenInfo.new(0.2), {TextColor3 = COLORS.TextDim}):Play()
-    end)
-    
-    return input
-end
-
-local UserIDInput = createInput("Discord ID", "Enter your Discord User ID", UDim2.new(0, 0, 0, 88), "🆔")
-local KeyInput = createInput("License Key", "BANANA-XXXX-XXXX-XXXX", UDim2.new(0, 0, 0, 168), "🔑")
-
--- Login Button
-local LoginBtn = Instance.new("TextButton")
-LoginBtn.Name = "LoginBtn"
-LoginBtn.BackgroundColor3 = COLORS.Accent
-LoginBtn.Position = UDim2.new(0, 0, 0, 248)
-LoginBtn.Size = UDim2.new(1, 0, 0, 50)
-LoginBtn.Font = Enum.Font.GothamBlack
-LoginBtn.Text = "AUTHENTICATE"
-LoginBtn.TextColor3 = Color3.new(0, 0, 0)
-LoginBtn.TextSize = 14
-LoginBtn.AutoButtonColor = false
-LoginBtn.ZIndex = 15
-LoginBtn.Parent = FormContainer
-
-createCorner(LoginBtn, 12)
-
--- Button gradient and glow
-local btnGradient = createGradient(LoginBtn, COLORS.AccentDark, COLORS.AccentGlow, 0)
-
-local btnShadow = Instance.new("Frame")
-btnShadow.Name = "BtnShadow"
-btnShadow.AnchorPoint = Vector2.new(0.5, 0.5)
-btnShadow.BackgroundColor3 = COLORS.Accent
-btnShadow.BackgroundTransparency = 0.6
-btnShadow.Position = UDim2.new(0.5, 0, 0.5, 5)
-btnShadow.Size = UDim2.new(1, 0, 1, 0)
-btnShadow.ZIndex = 14
-btnShadow.Parent = LoginBtn
-createCorner(btnShadow, 12)
-
--- Button icon
-local BtnIcon = Instance.new("TextLabel")
-BtnIcon.Name = "BtnIcon"
-BtnIcon.BackgroundTransparency = 1
-BtnIcon.Position = UDim2.new(0, 18, 0, 0)
-BtnIcon.Size = UDim2.new(0, 28, 1, 0)
-BtnIcon.Font = Enum.Font.GothamBold
-BtnIcon.Text = "→"
-BtnIcon.TextColor3 = Color3.new(0, 0, 0)
-BtnIcon.TextSize = 16
-BtnIcon.ZIndex = 15
-BtnIcon.Parent = LoginBtn
-
--- Status message
-local Status = Instance.new("TextLabel")
-Status.Name = "Status"
-Status.BackgroundTransparency = 1
-Status.Position = UDim2.new(0, 0, 0, 305)
-Status.Size = UDim2.new(1, 0, 0, 22)
-Status.Font = Enum.Font.GothamMedium
-Status.Text = ""
-Status.TextColor3 = COLORS.Error
-Status.TextSize = 11
-Status.TextXAlignment = Enum.TextXAlignment.Left
-Status.ZIndex = 15
-Status.Parent = FormContainer
-
--- Footer
-local Footer = Instance.new("Frame")
-Footer.Name = "Footer"
-Footer.BackgroundTransparency = 1
-Footer.AnchorPoint = Vector2.new(0, 1)
-Footer.Position = UDim2.new(0, 0, 1, 0)
-Footer.Size = UDim2.new(1, 0, 0, 26)
-Footer.ZIndex = 15
-Footer.Parent = FormContainer
-
-local FooterText = Instance.new("TextLabel")
-FooterText.BackgroundTransparency = 1
-FooterText.Size = UDim2.new(1, 0, 1, 0)
-FooterText.Font = Enum.Font.Gotham
-FooterText.Text = "🔒 Secured  •  v3.0  •  © 2026 Banana Hub"
-FooterText.TextColor3 = COLORS.TextDark
-FooterText.TextSize = 10
-FooterText.TextXAlignment = Enum.TextXAlignment.Left
-FooterText.ZIndex = 15
-FooterText.Parent = Footer
-
--- ============================================
--- LOGIC
--- ============================================
-
-local function notify(msg, success)
-    Status.Text = msg
-    Status.TextColor3 = success and COLORS.Success or COLORS.Error
-    
-    if not success then
-        local originalPos = Status.Position
-        for i = 1, 3 do
-            TweenService:Create(Status, TweenInfo.new(0.04), {Position = originalPos + UDim2.new(0, 6, 0, 0)}):Play()
-            task.wait(0.04)
-            TweenService:Create(Status, TweenInfo.new(0.04), {Position = originalPos - UDim2.new(0, 6, 0, 0)}):Play()
-            task.wait(0.04)
-        end
-        TweenService:Create(Status, TweenInfo.new(0.04), {Position = originalPos}):Play()
-    end
+local function createGradient(parent, c1, c2, rotation)
+    local grad = Instance.new("UIGradient")
+    grad.Color = ColorSequence.new(c1, c2)
+    grad.Rotation = rotation or 90
+    grad.Parent = parent
+    return grad
 end
 
 local function resolveApiUrl()
@@ -1006,6 +58,9 @@ local function resolveApiUrl()
         url = env.API_URL or env.BH_API_URL or env.BANANAHUB_API_URL
     end
     if not url or url == "" or url == "[[API_URL]]" then
+        url = DEFAULT_API_URL
+    end
+    if not url or url == "" or url == "[[API_URL]]" then
         return nil
     end
     url = tostring(url):gsub("/+$", "")
@@ -1013,11 +68,7 @@ local function resolveApiUrl()
 end
 
 local function requestJson(method, url, body)
-    local req = {
-        Url = url,
-        Method = method,
-        Headers = {}
-    }
+    local req = { Url = url, Method = method, Headers = {} }
     if body ~= nil then
         req.Headers["Content-Type"] = "application/json"
         req.Body = body
@@ -1040,46 +91,427 @@ local function requestJson(method, url, body)
     return true, data, res
 end
 
+-- UI setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BananaHubLoader"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+pcall(function() ScreenGui.Parent = CoreGui end)
+if not ScreenGui.Parent then
+    ScreenGui.Parent = player:WaitForChild("PlayerGui")
+end
+
+local blur = Instance.new("BlurEffect")
+blur.Name = "BananaHubBlur"
+blur.Size = 0
+blur.Parent = Lighting
+
+local Root = Instance.new("Frame")
+Root.Name = "Root"
+Root.Size = UDim2.new(1, 0, 1, 0)
+Root.BackgroundColor3 = COLORS.Bg
+Root.BackgroundTransparency = 0.65
+Root.BorderSizePixel = 0
+Root.Parent = ScreenGui
+createGradient(Root, COLORS.Bg, COLORS.Bg2, 45)
+
+-- Subtle noise texture
+local Noise = Instance.new("ImageLabel")
+Noise.Name = "Noise"
+Noise.BackgroundTransparency = 1
+Noise.Size = UDim2.new(1, 0, 1, 0)
+Noise.Image = "rbxassetid://8137712066"
+Noise.ImageTransparency = 0.96
+Noise.ScaleType = Enum.ScaleType.Tile
+Noise.TileSize = UDim2.new(0, 128, 0, 128)
+Noise.ZIndex = 2
+Noise.Parent = Root
+Noise.Visible = false
+
+-- Floating orbs
+local OrbA = Instance.new("Frame")
+OrbA.BackgroundColor3 = COLORS.Accent
+OrbA.BackgroundTransparency = 1
+OrbA.Size = UDim2.new(0, 220, 0, 220)
+OrbA.Position = UDim2.new(0.15, 0, 0.3, 0)
+OrbA.Parent = Root
+createCorner(OrbA, 999)
+
+local OrbB = Instance.new("Frame")
+OrbB.BackgroundColor3 = COLORS.Accent2
+OrbB.BackgroundTransparency = 1
+OrbB.Size = UDim2.new(0, 260, 0, 260)
+OrbB.Position = UDim2.new(0.7, 0, 0.6, 0)
+OrbB.Parent = Root
+createCorner(OrbB, 999)
+
+local function floatOrb(orb, duration)
+    task.spawn(function()
+        while orb.Parent do
+            local nx = math.random(10, 90) / 100
+            local ny = math.random(10, 90) / 100
+            TweenService:Create(orb, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                Position = UDim2.new(nx, 0, ny, 0),
+                BackgroundTransparency = math.random(85, 93) / 100
+            }):Play()
+            task.wait(duration + 0.2)
+        end
+    end)
+end
+
+floatOrb(OrbA, 9)
+floatOrb(OrbB, 12)
+
+-- Main container
+local Card = Instance.new("Frame")
+Card.Name = "Card"
+Card.AnchorPoint = Vector2.new(0.5, 0.5)
+Card.Position = UDim2.new(0.5, 0, 0.5, 0)
+Card.Size = UDim2.new(0, 720, 0, 380)
+Card.BackgroundColor3 = COLORS.Panel
+Card.Parent = Root
+createCorner(Card, 18)
+createStroke(Card, COLORS.Border, 1, 0.35)
+
+local CardShadow = Instance.new("ImageLabel")
+CardShadow.Name = "Shadow"
+CardShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+CardShadow.BackgroundTransparency = 1
+CardShadow.Position = UDim2.new(0.5, 0, 0.5, 8)
+CardShadow.Size = UDim2.new(1, 140, 1, 140)
+CardShadow.Image = "rbxassetid://6015667343"
+CardShadow.ImageColor3 = Color3.new(0, 0, 0)
+CardShadow.ImageTransparency = 0.5
+CardShadow.ScaleType = Enum.ScaleType.Slice
+CardShadow.SliceCenter = Rect.new(49, 49, 450, 450)
+CardShadow.ZIndex = 0
+CardShadow.Parent = Card
+
+local AccentBar = Instance.new("Frame")
+AccentBar.BackgroundColor3 = COLORS.Accent
+AccentBar.Size = UDim2.new(1, 0, 0, 3)
+AccentBar.Parent = Card
+createCorner(AccentBar, 4)
+createGradient(AccentBar, COLORS.Accent, COLORS.Accent2, 0)
+
+-- Left feature strip
+local LeftPanel = Instance.new("Frame")
+LeftPanel.Name = "LeftPanel"
+LeftPanel.BackgroundColor3 = COLORS.PanelHi
+LeftPanel.Size = UDim2.new(0, 260, 1, -3)
+LeftPanel.Position = UDim2.new(0, 0, 0, 3)
+LeftPanel.Parent = Card
+createCorner(LeftPanel, 18)
+createStroke(LeftPanel, COLORS.Border, 1, 0.4)
+
+local LeftGradient = createGradient(LeftPanel, Color3.fromHex("#161c27"), Color3.fromHex("#10141c"), 130)
+LeftGradient.Offset = Vector2.new(0, 0)
+
+-- Animated logo
+local Logo = Instance.new("ImageLabel")
+Logo.BackgroundTransparency = 1
+Logo.Image = "rbxassetid://13192004240"
+Logo.ImageColor3 = COLORS.Accent
+Logo.Size = UDim2.new(0, 56, 0, 56)
+Logo.Position = UDim2.new(0, 24, 0, 22)
+Logo.Parent = LeftPanel
+
+local LogoGlow = Instance.new("ImageLabel")
+LogoGlow.BackgroundTransparency = 1
+LogoGlow.Image = "rbxassetid://5028857084"
+LogoGlow.ImageColor3 = COLORS.Accent
+LogoGlow.ImageTransparency = 0.7
+LogoGlow.Size = UDim2.new(0, 120, 0, 120)
+LogoGlow.Position = UDim2.new(0, -6, 0, -6)
+LogoGlow.Parent = LeftPanel
+
+local Brand = Instance.new("TextLabel")
+Brand.BackgroundTransparency = 1
+Brand.Text = "BANANA HUB"
+Brand.Font = Enum.Font.GothamBlack
+Brand.TextSize = 18
+Brand.TextColor3 = COLORS.Text
+Brand.TextXAlignment = Enum.TextXAlignment.Left
+Brand.Position = UDim2.new(0, 24, 0, 86)
+Brand.Size = UDim2.new(1, -48, 0, 22)
+Brand.Parent = LeftPanel
+
+local Tagline = Instance.new("TextLabel")
+Tagline.BackgroundTransparency = 1
+Tagline.Text = "Premium features, fast access."
+Tagline.Font = Enum.Font.GothamMedium
+Tagline.TextSize = 11
+Tagline.TextColor3 = COLORS.Muted
+Tagline.TextXAlignment = Enum.TextXAlignment.Left
+Tagline.Position = UDim2.new(0, 24, 0, 110)
+Tagline.Size = UDim2.new(1, -48, 0, 18)
+Tagline.Parent = LeftPanel
+
+local Features = Instance.new("Frame")
+Features.BackgroundTransparency = 1
+Features.Position = UDim2.new(0, 24, 0, 150)
+Features.Size = UDim2.new(1, -48, 1, -180)
+Features.Parent = LeftPanel
+
+local function featureLine(text, y)
+    local dot = Instance.new("Frame")
+    dot.BackgroundColor3 = COLORS.Accent
+    dot.Size = UDim2.new(0, 6, 0, 6)
+    dot.Position = UDim2.new(0, 0, 0, y + 6)
+    dot.Parent = Features
+    createCorner(dot, 999)
+
+    local label = Instance.new("TextLabel")
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.Font = Enum.Font.GothamMedium
+    label.TextSize = 11
+    label.TextColor3 = COLORS.Muted
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Position = UDim2.new(0, 14, 0, y)
+    label.Size = UDim2.new(1, -14, 0, 18)
+    label.Parent = Features
+end
+
+featureLine("Instant verification", 0)
+featureLine("Cloud updates", 22)
+featureLine("Secure auth", 44)
+featureLine("Fast support", 66)
+
+-- Right login panel
+local RightPanel = Instance.new("Frame")
+RightPanel.Name = "RightPanel"
+RightPanel.BackgroundTransparency = 1
+RightPanel.Size = UDim2.new(1, -260, 1, -3)
+RightPanel.Position = UDim2.new(0, 260, 0, 3)
+RightPanel.Parent = Card
+
+local Header = Instance.new("Frame")
+Header.BackgroundTransparency = 1
+Header.Size = UDim2.new(1, -48, 0, 70)
+Header.Position = UDim2.new(0, 24, 0, 18)
+Header.Parent = RightPanel
+
+local Title = Instance.new("TextLabel")
+Title.BackgroundTransparency = 1
+Title.Text = "Welcome back"
+Title.Font = Enum.Font.GothamBlack
+Title.TextSize = 22
+Title.TextColor3 = COLORS.Text
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Size = UDim2.new(1, 0, 0, 28)
+Title.Parent = Header
+
+local Subtitle = Instance.new("TextLabel")
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "Enter your Discord ID and license key"
+Subtitle.Font = Enum.Font.GothamMedium
+Subtitle.TextSize = 12
+Subtitle.TextColor3 = COLORS.Muted
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+Subtitle.Position = UDim2.new(0, 0, 0, 30)
+Subtitle.Size = UDim2.new(1, 0, 0, 20)
+Subtitle.Parent = Header
+
+-- Status badge
+local StatusBadge = Instance.new("Frame")
+StatusBadge.BackgroundColor3 = COLORS.PanelHi
+StatusBadge.Position = UDim2.new(1, -160, 0, 18)
+StatusBadge.Size = UDim2.new(0, 136, 0, 24)
+StatusBadge.Parent = RightPanel
+createCorner(StatusBadge, 999)
+createStroke(StatusBadge, COLORS.Border, 1, 0.4)
+
+local StatusDot = Instance.new("Frame")
+StatusDot.BackgroundColor3 = COLORS.Muted
+StatusDot.Size = UDim2.new(0, 8, 0, 8)
+StatusDot.Position = UDim2.new(0, 10, 0.5, -4)
+StatusDot.Parent = StatusBadge
+createCorner(StatusDot, 999)
+
+local StatusText = Instance.new("TextLabel")
+StatusText.BackgroundTransparency = 1
+StatusText.Text = "Checking..."
+StatusText.Font = Enum.Font.GothamMedium
+StatusText.TextSize = 10
+StatusText.TextColor3 = COLORS.Muted
+StatusText.TextXAlignment = Enum.TextXAlignment.Left
+StatusText.Position = UDim2.new(0, 24, 0, 0)
+StatusText.Size = UDim2.new(1, -28, 1, 0)
+StatusText.Parent = StatusBadge
+
+local Form = Instance.new("Frame")
+Form.BackgroundTransparency = 1
+Form.Position = UDim2.new(0, 24, 0, 110)
+Form.Size = UDim2.new(1, -48, 0, 190)
+Form.Parent = RightPanel
+
+local function inputRow(labelText, placeholder, y)
+    local container = Instance.new("Frame")
+    container.BackgroundColor3 = COLORS.PanelHi
+    container.Position = UDim2.new(0, 0, 0, y)
+    container.Size = UDim2.new(1, 0, 0, 52)
+    container.Parent = Form
+    createCorner(container, 12)
+    createStroke(container, COLORS.Border, 1, 0.5)
+
+    local label = Instance.new("TextLabel")
+    label.BackgroundTransparency = 1
+    label.Text = labelText
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 10
+    label.TextColor3 = COLORS.Muted
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Position = UDim2.new(0, 14, 0, -18)
+    label.Size = UDim2.new(1, -28, 0, 16)
+    label.Parent = container
+
+    local input = Instance.new("TextBox")
+    input.BackgroundTransparency = 1
+    input.Text = ""
+    input.PlaceholderText = placeholder
+    input.PlaceholderColor3 = Color3.fromHex("#6b7280")
+    input.Font = Enum.Font.GothamMedium
+    input.TextSize = 13
+    input.TextColor3 = COLORS.Text
+    input.TextXAlignment = Enum.TextXAlignment.Left
+    input.ClearTextOnFocus = false
+    input.Position = UDim2.new(0, 14, 0, 0)
+    input.Size = UDim2.new(1, -28, 1, 0)
+    input.Parent = container
+
+    input.Focused:Connect(function()
+        TweenService:Create(container, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromHex("#1f2534")}):Play()
+    end)
+    input.FocusLost:Connect(function()
+        TweenService:Create(container, TweenInfo.new(0.15), {BackgroundColor3 = COLORS.PanelHi}):Play()
+    end)
+
+    return input
+end
+
+local UserIDInput = inputRow("DISCORD ID", "Enter your Discord ID", 0)
+local KeyInput = inputRow("LICENSE KEY", "BANANA-XXX-XXX-XXX", 76)
+
+local LoginBtn = Instance.new("TextButton")
+LoginBtn.BackgroundColor3 = COLORS.Accent
+LoginBtn.Position = UDim2.new(0, 0, 0, 140)
+LoginBtn.Size = UDim2.new(1, 0, 0, 48)
+LoginBtn.Font = Enum.Font.GothamBold
+LoginBtn.Text = "AUTHENTICATE"
+LoginBtn.TextSize = 13
+LoginBtn.TextColor3 = Color3.new(0, 0, 0)
+LoginBtn.AutoButtonColor = false
+LoginBtn.Parent = Form
+createCorner(LoginBtn, 12)
+createGradient(LoginBtn, COLORS.Accent, COLORS.Accent2, 0)
+
+LoginBtn.MouseEnter:Connect(function()
+    TweenService:Create(LoginBtn, TweenInfo.new(0.12), {Size = UDim2.new(1, 2, 0, 50)}):Play()
+end)
+LoginBtn.MouseLeave:Connect(function()
+    TweenService:Create(LoginBtn, TweenInfo.new(0.12), {Size = UDim2.new(1, 0, 0, 48)}):Play()
+end)
+
+local Status = Instance.new("TextLabel")
+Status.BackgroundTransparency = 1
+Status.Position = UDim2.new(0, 24, 1, -30)
+Status.Size = UDim2.new(1, -48, 0, 20)
+Status.Font = Enum.Font.GothamMedium
+Status.Text = ""
+Status.TextColor3 = COLORS.Error
+Status.TextSize = 11
+Status.TextXAlignment = Enum.TextXAlignment.Left
+Status.Parent = RightPanel
+
+local Foot = Instance.new("TextLabel")
+Foot.BackgroundTransparency = 1
+Foot.Position = UDim2.new(0, 24, 1, -10)
+Foot.Size = UDim2.new(1, -48, 0, 18)
+Foot.Font = Enum.Font.Gotham
+Foot.Text = "Secured • v4.2"
+Foot.TextColor3 = COLORS.Muted
+Foot.TextSize = 10
+Foot.TextXAlignment = Enum.TextXAlignment.Left
+Foot.Parent = RightPanel
+
+-- Loading screen
+local Loading = Instance.new("Frame")
+Loading.Name = "Loading"
+Loading.BackgroundTransparency = 0
+Loading.BackgroundColor3 = COLORS.Bg
+Loading.Size = UDim2.new(1, 0, 1, 0)
+Loading.ZIndex = 50
+Loading.Parent = Root
+
+local LoadingCard = Instance.new("Frame")
+LoadingCard.AnchorPoint = Vector2.new(0.5, 0.5)
+LoadingCard.Position = UDim2.new(0.5, 0, 0.5, 0)
+LoadingCard.Size = UDim2.new(0, 420, 0, 220)
+LoadingCard.BackgroundColor3 = COLORS.Panel
+LoadingCard.ZIndex = 51
+LoadingCard.Parent = Loading
+createCorner(LoadingCard, 18)
+createStroke(LoadingCard, COLORS.Border, 1, 0.4)
+
+local LoadingTitle = Instance.new("TextLabel")
+LoadingTitle.BackgroundTransparency = 1
+LoadingTitle.Text = "Loading Banana Hub"
+LoadingTitle.Font = Enum.Font.GothamBlack
+LoadingTitle.TextSize = 18
+LoadingTitle.TextColor3 = COLORS.Text
+LoadingTitle.Size = UDim2.new(1, -40, 0, 28)
+LoadingTitle.Position = UDim2.new(0, 20, 0, 26)
+LoadingTitle.Parent = LoadingCard
+
+local LoadingSub = Instance.new("TextLabel")
+LoadingSub.BackgroundTransparency = 1
+LoadingSub.Text = "Preparing interface..."
+LoadingSub.Font = Enum.Font.GothamMedium
+LoadingSub.TextSize = 11
+LoadingSub.TextColor3 = COLORS.Muted
+LoadingSub.Position = UDim2.new(0, 20, 0, 52)
+LoadingSub.Size = UDim2.new(1, -40, 0, 20)
+LoadingSub.Parent = LoadingCard
+
+local Bar = Instance.new("Frame")
+Bar.BackgroundColor3 = COLORS.PanelHi
+Bar.Position = UDim2.new(0, 20, 0, 120)
+Bar.Size = UDim2.new(1, -40, 0, 8)
+Bar.Parent = LoadingCard
+createCorner(Bar, 6)
+createStroke(Bar, COLORS.Border, 1, 0.5)
+
+local BarFill = Instance.new("Frame")
+BarFill.BackgroundColor3 = COLORS.Accent
+BarFill.Size = UDim2.new(0, 0, 1, 0)
+BarFill.Parent = Bar
+createCorner(BarFill, 6)
+createGradient(BarFill, COLORS.Accent, COLORS.Accent2, 0)
+
+local Percent = Instance.new("TextLabel")
+Percent.BackgroundTransparency = 1
+Percent.Text = "0%"
+Percent.Font = Enum.Font.GothamBold
+Percent.TextSize = 11
+Percent.TextColor3 = COLORS.Muted
+Percent.Position = UDim2.new(0, 20, 0, 140)
+Percent.Size = UDim2.new(0, 60, 0, 18)
+Percent.Parent = LoadingCard
+
+local function notify(msg, ok)
+    Status.Text = msg
+    Status.TextColor3 = ok and COLORS.Success or COLORS.Error
+end
+
 local function setButtonLoading(loading)
     if loading then
-        LoginBtn.Text = ""
-        BtnIcon.Text = ""
-        
-        local spinner = Instance.new("Frame")
-        spinner.Name = "Spinner"
-        spinner.BackgroundTransparency = 1
-        spinner.AnchorPoint = Vector2.new(0.5, 0.5)
-        spinner.Position = UDim2.new(0.5, 0, 0.5, 0)
-        spinner.Size = UDim2.new(0, 80, 0, 24)
-        spinner.ZIndex = 16
-        spinner.Parent = LoginBtn
-        
-        for i = 1, 3 do
-            local dot = Instance.new("Frame")
-            dot.Name = "Dot" .. i
-            dot.BackgroundColor3 = Color3.new(0, 0, 0)
-            dot.Position = UDim2.new(0, (i - 1) * 28 + 6, 0.5, -5)
-            dot.Size = UDim2.new(0, 10, 0, 10)
-            dot.ZIndex = 17
-            dot.Parent = spinner
-            createCorner(dot, 5)
-            
-            task.spawn(function()
-                task.wait(i * 0.12)
-                while spinner.Parent do
-                    TweenService:Create(dot, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {Position = UDim2.new(0, (i - 1) * 28 + 6, 0.5, -12), BackgroundTransparency = 0}):Play()
-                    task.wait(0.25)
-                    TweenService:Create(dot, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {Position = UDim2.new(0, (i - 1) * 28 + 6, 0.5, -5), BackgroundTransparency = 0.3}):Play()
-                    task.wait(0.25)
-                end
-            end)
-        end
+        LoginBtn.Text = "WORKING..."
         LoginBtn.Active = false
     else
-        local spinner = LoginBtn:FindFirstChild("Spinner")
-        if spinner then spinner:Destroy() end
         LoginBtn.Text = "AUTHENTICATE"
-        BtnIcon.Text = "→"
         LoginBtn.Active = true
     end
 end
@@ -1087,229 +519,160 @@ end
 local function handleLogin()
     local uid = UserIDInput.Text
     local key = KeyInput.Text
-    
+
     if uid == "" or key == "" then
-        notify("??? Please fill in all fields", false)
+        notify("ERROR: Fill in all fields", false)
         return
     end
-    
+
     local apiUrl = resolveApiUrl()
     if not apiUrl then
-        notify("??? API URL not configured", false)
+        notify("ERROR: API URL not configured", false)
         return
     end
-    
-    notify("??? Authenticating...", true)
+
+    notify("Authenticating...", true)
     setButtonLoading(true)
-    
+
     local query = "user_id=" .. HttpService:UrlEncode(uid) .. "&key=" .. HttpService:UrlEncode(key)
     local ok, dataOrErr = requestJson("GET", apiUrl .. "/api/verify?" .. query)
-    
+
     if not ok then
-        -- Fallback for servers that only support /api/auth (JSON POST)
         local payload = HttpService:JSONEncode({uid = uid, user_id = uid, key = key})
         ok, dataOrErr = requestJson("POST", apiUrl .. "/api/auth", payload)
     end
-    
+
     if ok then
         local data = dataOrErr
         local successFlag = data.success == true or data.authenticated == true or data.valid == true
         if successFlag then
-            notify("??? Access Granted!", true)
-            
-            TweenService:Create(LoginBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.Success}):Play()
+            notify("Access Granted", true)
+            TweenService:Create(LoginBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Success}):Play()
             setButtonLoading(false)
-            LoginBtn.Text = "??? SUCCESS"
-            BtnIcon.Text = "???"
-            
-            task.wait(1)
-            
-            -- Epic exit animation
-            TweenService:Create(blur, TweenInfo.new(0.6), {Size = 0}):Play()
-            TweenService:Create(BlurOverlay, TweenInfo.new(0.6), {BackgroundTransparency = 1}):Play()
-            
-            for _, orb in ipairs(orbs) do
-                if orb[1] then TweenService:Create(orb[1], TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play() end
-            end
-            
-            local fadeOut = TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+            task.wait(0.6)
+            TweenService:Create(blur, TweenInfo.new(0.35), {Size = 0}):Play()
+            TweenService:Create(Card, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
                 Size = UDim2.new(0, 0, 0, 0),
                 BackgroundTransparency = 1
-            })
-            fadeOut:Play()
-            fadeOut.Completed:Wait()
-            blur:Destroy()
+            }):Play()
+            task.wait(0.4)
             ScreenGui:Destroy()
-            
-            print("[Banana Hub] Loader finished successfully.")
-        else
-            local errMsg = data.error or data.message or data.reason or "Invalid credentials"
-            notify("??? " .. tostring(errMsg), false)
-            setButtonLoading(false)
-            
-            local originalPos = LoginBtn.Position
-            for i = 1, 2 do
-                TweenService:Create(LoginBtn, TweenInfo.new(0.04), {Position = originalPos + UDim2.new(0, 10, 0, 0)}):Play()
-                task.wait(0.04)
-                TweenService:Create(LoginBtn, TweenInfo.new(0.04), {Position = originalPos - UDim2.new(0, 10, 0, 0)}):Play()
-                task.wait(0.04)
-            end
-            TweenService:Create(LoginBtn, TweenInfo.new(0.04), {Position = originalPos}):Play()
+            blur:Destroy()
+            return
         end
+
+        local errMsg = data.error or data.message or data.reason or "Invalid credentials"
+        notify("ERROR: " .. tostring(errMsg), false)
     else
         local errLabel = tostring(dataOrErr or "")
-        local msg = "??? Connection failed"
+        local msg = "ERROR: Connection failed"
         if errLabel ~= "" then
             msg = msg .. " (" .. errLabel .. ")"
         end
         notify(msg, false)
-        setButtonLoading(false)
     end
+
+    setButtonLoading(false)
 end
-
--- Button Hover Effects
-LoginBtn.MouseEnter:Connect(function()
-    TweenService:Create(LoginBtn, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
-        Size = UDim2.new(1, 4, 0, 52),
-        Position = UDim2.new(0, -2, 0, 247)
-    }):Play()
-    TweenService:Create(btnShadow, TweenInfo.new(0.2), {BackgroundTransparency = 0.4, Position = UDim2.new(0.5, 0, 0.5, 8)}):Play()
-    TweenService:Create(BtnIcon, TweenInfo.new(0.2), {Position = UDim2.new(0, 23, 0, 0)}):Play()
-end)
-
-LoginBtn.MouseLeave:Connect(function()
-    TweenService:Create(LoginBtn, TweenInfo.new(0.2, Enum.EasingStyle.Quart), {
-        Size = UDim2.new(1, 0, 0, 50),
-        Position = UDim2.new(0, 0, 0, 248)
-    }):Play()
-    TweenService:Create(btnShadow, TweenInfo.new(0.2), {BackgroundTransparency = 0.6, Position = UDim2.new(0.5, 0, 0.5, 5)}):Play()
-    TweenService:Create(BtnIcon, TweenInfo.new(0.2), {Position = UDim2.new(0, 18, 0, 0)}):Play()
-end)
-
-LoginBtn.MouseButton1Down:Connect(function()
-    TweenService:Create(LoginBtn, TweenInfo.new(0.08), {
-        Size = UDim2.new(1, -4, 0, 48),
-        Position = UDim2.new(0, 2, 0, 249)
-    }):Play()
-end)
-
-LoginBtn.MouseButton1Up:Connect(function()
-    TweenService:Create(LoginBtn, TweenInfo.new(0.08), {
-        Size = UDim2.new(1, 4, 0, 52),
-        Position = UDim2.new(0, -2, 0, 247)
-    }):Play()
-end)
 
 LoginBtn.MouseButton1Click:Connect(handleLogin)
 
--- ============================================
--- LOADING ANIMATION
--- ============================================
-task.spawn(function()
-    local loadSteps = {
-        {progress = 0.15, text = "Initializing core modules..."},
-        {progress = 0.30, text = "Loading security layer..."},
-        {progress = 0.50, text = "Connecting to servers..."},
-        {progress = 0.70, text = "Verifying integrity..."},
-        {progress = 0.85, text = "Preparing interface..."},
-        {progress = 1.00, text = "Ready to authenticate!"}
-    }
-    
-    for _, step in ipairs(loadSteps) do
-        TweenService:Create(Fill, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {Size = UDim2.new(step.progress, 0, 1, 0)}):Play()
-        ProgressPercent.Text = math.floor(step.progress * 100) .. "%"
-        ProgressText.Text = step.text
-        task.wait(0.45)
+-- Status ping
+local function updateStatus()
+    local apiUrl = resolveApiUrl()
+    if not apiUrl then
+        StatusDot.BackgroundColor3 = COLORS.Error
+        StatusText.Text = "API not set"
+        StatusText.TextColor3 = COLORS.Error
+        return
     end
-    
-    task.wait(0.4)
-    
-    -- Fade out loading elements
-    local fadeElements = {LoadingTitle, LoadingSubtitle, ProgressContainer, ProgressText, ProgressPercent}
-    for _, element in ipairs(fadeElements) do
-        if element:IsA("TextLabel") then
-            TweenService:Create(element, TweenInfo.new(0.35), {TextTransparency = 1}):Play()
-        elseif element:IsA("Frame") then
-            TweenService:Create(element, TweenInfo.new(0.35), {BackgroundTransparency = 1}):Play()
-        end
+
+    local ok = select(1, requestJson("GET", apiUrl .. "/api/status"))
+    if ok then
+        StatusDot.BackgroundColor3 = COLORS.Success
+        StatusText.Text = "Online"
+        StatusText.TextColor3 = COLORS.Success
+    else
+        StatusDot.BackgroundColor3 = COLORS.Error
+        StatusText.Text = "Offline"
+        StatusText.TextColor3 = COLORS.Error
     end
-    
-    TweenService:Create(RingContainer, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 0)
+end
+
+-- Loading sequence
+local function endLoading()
+    if not Loading.Visible then
+        return
+    end
+
+    TweenService:Create(Loading, TweenInfo.new(0.25), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(LoadingCard, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+    task.wait(0.3)
+    Loading.Visible = false
+
+    Card.Size = UDim2.new(0, 0, 0, 0)
+    TweenService:Create(Card, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 720, 0, 380)
     }):Play()
-    
-    task.wait(0.5)
-    
-    LoadingFrame.Visible = false
-    LoginFrame.Visible = true
-    
-    -- Animate login panel in
-    LeftPanel.Position = UDim2.new(-0.42, 0, 0, 0)
-    RightPanel.BackgroundTransparency = 1
-    
-    TweenService:Create(LeftPanel, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0, 0, 0, 0)
-    }):Play()
-    
-    task.wait(0.15)
-    
-    -- Stagger in form elements
-    local formElements = {WelcomeText, SubText}
-    for i, element in ipairs(formElements) do
-        element.TextTransparency = 1
-        task.delay(i * 0.08, function()
-            TweenService:Create(element, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
-        end)
+end
+
+local function runLoading()
+    TweenService:Create(blur, TweenInfo.new(0.2), {Size = 0}):Play()
+    for i = 1, 5 do
+        local p = i / 5
+        TweenService:Create(BarFill, TweenInfo.new(0.35, Enum.EasingStyle.Quad), {Size = UDim2.new(p, 0, 1, 0)}):Play()
+        Percent.Text = math.floor(p * 100) .. "%"
+        task.wait(0.4)
     end
-    
-    -- Animate input containers
-    for _, child in ipairs(FormContainer:GetChildren()) do
-        if child:IsA("Frame") and child.Name:find("Container") then
-            child.BackgroundTransparency = 1
-            task.delay(0.25, function()
-                TweenService:Create(child, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {BackgroundTransparency = 0}):Play()
-            end)
-        end
-    end
-    
-    -- Animate button
-    LoginBtn.BackgroundTransparency = 1
-    task.delay(0.4, function()
-        TweenService:Create(LoginBtn, TweenInfo.new(0.4, Enum.EasingStyle.Quart), {BackgroundTransparency = 0}):Play()
+
+    -- Default to offline, then try a live ping without blocking UI
+    StatusDot.BackgroundColor3 = COLORS.Error
+    StatusText.Text = "Offline"
+    StatusText.TextColor3 = COLORS.Error
+    task.spawn(function()
+        pcall(updateStatus)
     end)
-    
-    -- Animate features list
-    for i, child in ipairs(Features:GetChildren()) do
-        if child:IsA("Frame") then
-            for _, label in ipairs(child:GetChildren()) do
-                if label:IsA("TextLabel") then
-                    label.TextTransparency = 1
-                end
-            end
-            task.delay(0.3 + (i * 0.1), function()
-                for _, label in ipairs(child:GetChildren()) do
-                    if label:IsA("TextLabel") then
-                        TweenService:Create(label, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
-                    end
-                end
-            end)
-        end
+    endLoading()
+end
+
+-- Animated logo pulse
+task.spawn(function()
+    while ScreenGui.Parent do
+        TweenService:Create(Logo, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = 8}):Play()
+        TweenService:Create(LogoGlow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {ImageTransparency = 0.6}):Play()
+        task.wait(1.2)
+        TweenService:Create(Logo, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = -8}):Play()
+        TweenService:Create(LogoGlow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {ImageTransparency = 0.75}):Play()
+        task.wait(1.2)
     end
 end)
 
--- ============================================
--- INITIAL ENTRANCE ANIMATION
--- ============================================
-MainFrame.Size = UDim2.new(0, 0, 0, 0)
-MainFrame.BackgroundTransparency = 1
-BlurOverlay.BackgroundTransparency = 1
+-- Drag
+local dragging = false
+local dragStart, startPos
+Card.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = Card.Position
+    end
+end)
+Card.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        Card.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
 
--- Animate blur in
-TweenService:Create(blur, TweenInfo.new(0.6), {Size = 12}):Play()
-TweenService:Create(BlurOverlay, TweenInfo.new(0.5), {BackgroundTransparency = 0.4}):Play()
-
--- Animate main frame in with bounce
-TweenService:Create(MainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    Size = UDim2.new(0, FRAME_WIDTH, 0, FRAME_HEIGHT),
-    BackgroundTransparency = 0
-}):Play()
+-- Start
+task.delay(3, function()
+    if Loading.Visible then
+        endLoading()
+    end
+end)
+runLoading()

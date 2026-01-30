@@ -760,7 +760,7 @@ LANDING_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                 <a href="#features" style="color: var(--text-secondary); font-weight: 500;">Features</a>
                 <a href="#pricing" style="color: var(--text-secondary); font-weight: 500;">Pricing</a>
                 <a href="#faq" style="color: var(--text-secondary); font-weight: 500;">FAQ</a>
-                <a href="/login" class="btn btn-primary btn-sm">Get Started</a>
+                <a href="/trial" class="btn btn-primary btn-sm">Start Trial</a>
             </div>
         </div>
     </div>
@@ -784,7 +784,7 @@ LANDING_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
             </p>
             
             <div class="flex-center gap-lg" style="margin-bottom: 4rem; flex-wrap: wrap;">
-                <a href="/login" class="btn btn-primary btn-lg">
+                <a href="/trial" class="btn btn-primary btn-lg">
                     <i class="fas fa-play"></i>
                     <span>Start Free Trial</span>
                 </a>
@@ -1208,6 +1208,114 @@ LOGIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
 </script>
 """)
 
+# ==============================================================================
+# 🆓 TRIAL PAGE
+# ==============================================================================
+
+TRIAL_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
+<section class="section-lg">
+    <div class="container" style="max-width: 720px;">
+        <div class="card fade-in" style="padding: 2.5rem;">
+            <h2 style="margin-bottom: 0.75rem;">Start 24-Hour Trial</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                Enter your Discord ID to generate a free 24-hour key.
+            </p>
+            <div class="grid" style="gap: 1rem;">
+                <div>
+                    <label class="label">Discord ID</label>
+                    <input id="trial_discord" class="input" placeholder="123456789012345678" />
+                </div>
+                <button class="btn btn-primary" onclick="startTrial()">
+                    <i class="fas fa-key"></i>
+                    <span>Generate Trial Key</span>
+                </button>
+                <div id="trial_msg" style="min-height: 20px; color: var(--text-secondary); font-size: 0.9rem;"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+async function startTrial() {
+    const discordId = document.getElementById('trial_discord').value.trim();
+    const msg = document.getElementById('trial_msg');
+    msg.textContent = "Generating...";
+
+    if (!discordId) {
+        msg.textContent = "Please enter your Discord ID.";
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/trial/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ discord_id: discordId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.location.href = `/trial/dashboard?key=${encodeURIComponent(data.key)}`;
+        } else {
+            msg.textContent = data.error || "Failed to start trial.";
+        }
+    } catch (err) {
+        msg.textContent = "Connection error. Please try again.";
+    }
+}
+</script>
+""")
+
+# ==============================================================================
+# 🕒 TRIAL DASHBOARD
+# ==============================================================================
+
+TRIAL_DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
+<section class="section-lg">
+    <div class="container" style="max-width: 900px;">
+        <div class="card fade-in" style="padding: 2.5rem;">
+            <h2 style="margin-bottom: 0.5rem;">Trial Dashboard</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                Your 24-hour trial key is active. Use it in the loader UI.
+            </p>
+
+            <div class="grid grid-2" style="gap: 1.5rem;">
+                <div class="card" style="padding: 1.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">TRIAL KEY</div>
+                    <div style="font-family: monospace; font-size: 1.1rem;">{{ trial.get('key', 'N/A') }}</div>
+                    <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted);">
+                        Expires: {{ trial.get('expires_at', 'Unknown') }}
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 1.5rem;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">LOADER</div>
+                    <textarea id="trial_loader" class="code-block" style="height: 120px; resize: none;" readonly>
+getgenv().API_URL = "{{ website_url }}"
+loadstring(game:HttpGet("{{ website_url }}/script.lua"))()
+                    </textarea>
+                    <button class="btn btn-secondary btn-sm" onclick="copyTrialLoader()" style="margin-top: 0.5rem;">
+                        <i class="fas fa-copy"></i>
+                        <span>Copy Loader</span>
+                    </button>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                After running the loader, enter your Discord ID and the trial key above.
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+function copyTrialLoader() {
+    const box = document.getElementById('trial_loader');
+    box.select();
+    document.execCommand('copy');
+}
+</script>
+""")
+
 # Due to character limits, I'll continue in the next part with DASHBOARD_PAGE, ADMIN_PAGE, and the multi-page navigation system...
 
 # ==============================================================================
@@ -1219,6 +1327,8 @@ TEMPLATES = {
     'login': LOGIN_PAGE,
     'dashboard': None,  # Will be set below
     'admin': None,  # Will be set below
+    'trial': None,  # Will be set below
+    'trial_dashboard': None,  # Will be set below
 }
 # ==============================================================================
 # 👤 USER DASHBOARD - Multi-Page Layout with Sidebar Navigation
@@ -3019,8 +3129,10 @@ TEMPLATES = {
     'landing': LANDING_PAGE,
     'login': LOGIN_PAGE,
     'dashboard': DASHBOARD_PAGE,
-    'admin': ADMIN_PAGE
+    'admin': ADMIN_PAGE,
+    'trial': TRIAL_PAGE,
+    'trial_dashboard': TRIAL_DASHBOARD_PAGE
 }
 
 # Export all templates
-__all__ = ['TEMPLATES', 'LANDING_PAGE', 'LOGIN_PAGE', 'DASHBOARD_PAGE', 'ADMIN_PAGE']
+__all__ = ['TEMPLATES', 'LANDING_PAGE', 'LOGIN_PAGE', 'DASHBOARD_PAGE', 'ADMIN_PAGE', 'TRIAL_PAGE', 'TRIAL_DASHBOARD_PAGE']

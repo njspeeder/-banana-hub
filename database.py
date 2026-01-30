@@ -10,7 +10,9 @@ import logging
 import os
 import shutil
 import sqlite3
-from datetime import datetime, UTC
+import random
+import string
+from datetime import datetime, UTC, timedelta
 from pathlib import Path
 from typing import Dict, Optional, List, Any
 
@@ -102,11 +104,20 @@ class Database:
             details TEXT,
             timestamp TEXT DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS trials (
+            key TEXT PRIMARY KEY,
+            discord_id TEXT,
+            created_at TEXT,
+            expires_at TEXT,
+            ip_address TEXT
+        );
         
         CREATE INDEX IF NOT EXISTS idx_users_key ON users(key);
         CREATE INDEX IF NOT EXISTS idx_keys_used ON keys(used);
         CREATE INDEX IF NOT EXISTS idx_analytics_discord ON analytics(discord_id);
         CREATE INDEX IF NOT EXISTS idx_analytics_event ON analytics(event_type);
+        CREATE INDEX IF NOT EXISTS idx_trials_discord ON trials(discord_id);
         """
         
         conn = None
@@ -327,6 +338,99 @@ class Database:
         if not self.mark_key_redeemed(key, discord_id):
             return False
         return True
+
+    # ==========================================================================
+    # ⏱️ TRIAL OPERATIONS
+    # ==========================================================================
+
+    def _generate_trial_key(self) -> str:
+        chars = string.ascii_uppercase + string.digits
+        part1 = ''.join(random.choices(chars, k=4))
+        part2 = ''.join(random.choices(chars, k=4))
+        return f"TRIAL-{part1}-{part2}"
+
+    def get_trial_by_key(self, key: str) -> Optional[Dict[str, Any]]:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM trials WHERE key = ?", (key,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        except Exception as e:
+            log.error(f"Error getting trial by key: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    def get_active_trial_by_user(self, discord_id: int | str) -> Optional[Dict[str, Any]]:
+        discord_id_str = str(discord_id)
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT * FROM trials WHERE discord_id = ? ORDER BY created_at DESC LIMIT 1",
+                (discord_id_str,)
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            trial = dict(row)
+            expires_at = trial.get("expires_at")
+            if not expires_at:
+                return None
+            if datetime.fromisoformat(expires_at) <= datetime.now(UTC):
+                return None
+            return trial
+        except Exception as e:
+            log.error(f"Error getting trial for user: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    def create_trial(self, discord_id: int | str, ip_address: Optional[str] = None, hours: int = 24) -> Optional[Dict[str, Any]]:
+        discord_id_str = str(discord_id)
+        now = datetime.now(UTC)
+        expires = now + timedelta(hours=hours)
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+
+            # Reuse active trial if exists
+            cur.execute(
+                "SELECT * FROM trials WHERE discord_id = ? ORDER BY created_at DESC LIMIT 1",
+                (discord_id_str,)
+            )
+            row = cur.fetchone()
+            if row:
+                trial = dict(row)
+                expires_at = trial.get("expires_at")
+                if expires_at and datetime.fromisoformat(expires_at) > now:
+                    return trial
+
+            key = self._generate_trial_key()
+            cur.execute(
+                "INSERT INTO trials (key, discord_id, created_at, expires_at, ip_address) VALUES (?, ?, ?, ?, ?)",
+                (key, discord_id_str, now.isoformat(), expires.isoformat(), ip_address)
+            )
+            conn.commit()
+            return {
+                "key": key,
+                "discord_id": discord_id_str,
+                "created_at": now.isoformat(),
+                "expires_at": expires.isoformat(),
+                "ip_address": ip_address
+            }
+        except Exception as e:
+            log.error(f"Error creating trial: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
 
     # ==========================================================================
     # 🚫 BLACKLIST OPERATIONS

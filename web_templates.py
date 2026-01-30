@@ -1241,12 +1241,10 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
         <!-- User Profile Card -->
         <div style="padding: 1.5rem; border-bottom: 1px solid var(--border);">
             <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border);">
-                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, var(--primary), var(--accent)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: var(--bg-dark);">
-                    {{ user.get('discord_id', 'U')[0].upper() }}
-                </div>
+                <img src="{{ user.get('avatar_url', '') }}" alt="Avatar" style="width: 48px; height: 48px; border-radius: 14px; object-fit: cover; background: var(--bg-dark); border: 1px solid var(--border);" />
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-weight: 600; font-size: 0.875rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        User {{ user.get('discord_id', '???')[:6] }}
+                        Welcome {{ user.get('display_name', 'User') }}!
                     </div>
                     <div style="font-size: 0.75rem; color: var(--text-muted);">Premium User</div>
                 </div>
@@ -1403,7 +1401,8 @@ DASHBOARD_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                             </div>
                         </div>
                         
-                        <textarea id="loaderScript" class="code-block" style="height: 180px; resize: none; font-size: 0.75rem; margin-bottom: 1rem;" readonly>{{ loader_script }}</textarea>
+                        <textarea id="loaderScript" class="code-block" style="height: 180px; resize: none; font-size: 0.75rem; margin-bottom: 1rem;" readonly>getgenv().API_URL = "{{ website_url }}"
+loadstring(game:HttpGet("{{ website_url }}/script.lua"))()</textarea>
                         
                         <div style="display: flex; gap: 0.75rem;">
                             <button onclick="copyLoader()" class="btn btn-primary" style="flex: 1;">

@@ -9,6 +9,10 @@ import logging
 import os
 import random
 import string
+import time
+import json
+import urllib.request
+import urllib.error
 from datetime import datetime, UTC
 from functools import wraps
 from typing import Optional, Dict, Any, List
@@ -85,6 +89,75 @@ def generate_key() -> str:
     return f'BANANA-{part1}-{part2}-{part3}'
 
 
+_discord_profile_cache: Dict[str, Dict[str, Any]] = {}
+_discord_profile_cache_ttl = 300
+
+
+def _discord_api_request(path: str) -> Optional[Dict[str, Any]]:
+    """Fetch Discord API JSON using bot token; returns None on failure."""
+    token = getattr(Config, 'BOT_TOKEN', '') or os.getenv("BOT_TOKEN", "")
+    if not token:
+        return None
+    url = f"https://discord.com/api/v10{path}"
+    req = urllib.request.Request(url, headers={"Authorization": f"Bot {token}"})
+    try:
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = resp.read().decode("utf-8")
+            return json.loads(data)
+    except (urllib.error.URLError, json.JSONDecodeError, TimeoutError) as e:
+        log.warning(f"Discord API request failed for {path}: {e}")
+        return None
+
+
+def get_discord_profile(user_id: str) -> Dict[str, str]:
+    """Get Discord display name and avatar URL for a user (cached)."""
+    user_id = str(user_id or "")
+    if not user_id:
+        return {"display_name": "User", "avatar_url": ""}
+
+    now = time.time()
+    cached = _discord_profile_cache.get(user_id)
+    if cached and (now - cached.get("ts", 0)) < _discord_profile_cache_ttl:
+        return cached["data"]
+
+    guild_id = getattr(Config, 'GUILD_ID', None) or os.getenv("GUILD_ID")
+    profile = None
+
+    if guild_id:
+        profile = _discord_api_request(f"/guilds/{guild_id}/members/{user_id}")
+
+    if not profile:
+        profile = _discord_api_request(f"/users/{user_id}") or {}
+
+    display_name = (
+        profile.get("nick")
+        or profile.get("global_name")
+        or profile.get("username")
+        or f"User {user_id[:6]}"
+    )
+
+    user_obj = profile.get("user", profile)
+    avatar_hash = user_obj.get("avatar")
+    discriminator = user_obj.get("discriminator", "0")
+
+    if avatar_hash:
+        ext = "gif" if avatar_hash.startswith("a_") else "png"
+        avatar_url = f"https://cdn.discordapp.com/avatars/{user_id}/{avatar_hash}.{ext}?size=128"
+    else:
+        try:
+            if discriminator and discriminator != "0":
+                idx = int(discriminator) % 5
+            else:
+                idx = int(user_id) % 5
+        except ValueError:
+            idx = 0
+        avatar_url = f"https://cdn.discordapp.com/embed/avatars/{idx}.png"
+
+    data = {"display_name": display_name, "avatar_url": avatar_url}
+    _discord_profile_cache[user_id] = {"ts": now, "data": data}
+    return data
+
+
 def generate_loader_script(user_id: str, key: str) -> str:
     """Generate Lua loader script for user."""
     website_url = getattr(Config, 'WEBSITE_URL', 'https://banana-hub.onrender.com')
@@ -103,6 +176,7 @@ loadstring(game:HttpGet(WEBSITE_URL .. "/script.lua"))()
 def safe_get_user_data(user_id: str) -> Dict[str, Any]:
     """Get user data safely with comprehensive defaults."""
     try:
+        profile = get_discord_profile(user_id)
         user = db.get_user(user_id)
         
         if not user or not isinstance(user, dict):
@@ -112,7 +186,9 @@ def safe_get_user_data(user_id: str) -> Dict[str, Any]:
                 'hwid': '',
                 'last_login': 'Never',
                 'joined_at': 'Unknown',
-                'login_count': 0
+                'login_count': 0,
+                'display_name': profile.get('display_name', 'User'),
+                'avatar_url': profile.get('avatar_url', '')
             }
         
         return {
@@ -121,7 +197,9 @@ def safe_get_user_data(user_id: str) -> Dict[str, Any]:
             'hwid': user.get('hwid') or '',
             'last_login': user.get('last_login') or 'Never',
             'joined_at': user.get('joined_at') or 'Unknown',
-            'login_count': user.get('login_count') or 0
+            'login_count': user.get('login_count') or 0,
+            'display_name': profile.get('display_name', 'User'),
+            'avatar_url': profile.get('avatar_url', '')
         }
     except Exception as e:
         log.error(f"Error getting user data for {user_id}: {e}")
@@ -131,7 +209,9 @@ def safe_get_user_data(user_id: str) -> Dict[str, Any]:
             'hwid': '',
             'last_login': 'Never',
             'joined_at': 'Unknown',
-            'login_count': 0
+            'login_count': 0,
+            'display_name': 'User',
+            'avatar_url': ''
         }
 
 

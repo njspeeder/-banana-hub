@@ -654,7 +654,7 @@ BrandTag.BackgroundTransparency = 1
 BrandTag.Position = UDim2.new(0, 65, 0, 36)
 BrandTag.Size = UDim2.new(1, -70, 0, 18)
 BrandTag.Font = Enum.Font.GothamMedium
-BrandTag.Text = "Premium"
+BrandTag.Text = "Premium'/"
 BrandTag.TextColor3 = COLORS.Accent
 BrandTag.TextSize = 12
 BrandTag.TextXAlignment = Enum.TextXAlignment.Left
@@ -999,6 +999,47 @@ local function notify(msg, success)
     end
 end
 
+local function resolveApiUrl()
+    local url = API_URL
+    if url == nil or url == "" or url == "[[API_URL]]" then
+        local env = (getgenv and getgenv()) or {}
+        url = env.API_URL or env.BH_API_URL or env.BANANAHUB_API_URL
+    end
+    if not url or url == "" or url == "[[API_URL]]" then
+        return nil
+    end
+    url = tostring(url):gsub("/+$", "")
+    return url
+end
+
+local function requestJson(method, url, body)
+    local req = {
+        Url = url,
+        Method = method,
+        Headers = {}
+    }
+    if body ~= nil then
+        req.Headers["Content-Type"] = "application/json"
+        req.Body = body
+    end
+    local ok, res = pcall(function()
+        return HttpService:RequestAsync(req)
+    end)
+    if not ok then
+        return false, "request_failed", res
+    end
+    if not res.Success then
+        return false, "http_" .. tostring(res.StatusCode), res
+    end
+    local decode_ok, data = pcall(function()
+        return HttpService:JSONDecode(res.Body)
+    end)
+    if not decode_ok then
+        return false, "decode_failed", res.Body
+    end
+    return true, data, res
+end
+
 local function setButtonLoading(loading)
     if loading then
         LoginBtn.Text = ""
@@ -1048,30 +1089,38 @@ local function handleLogin()
     local key = KeyInput.Text
     
     if uid == "" or key == "" then
-        notify("❌ Please fill in all fields", false)
+        notify("??? Please fill in all fields", false)
         return
     end
     
-    notify("⏳ Authenticating...", true)
+    local apiUrl = resolveApiUrl()
+    if not apiUrl then
+        notify("??? API URL not configured", false)
+        return
+    end
+    
+    notify("??? Authenticating...", true)
     setButtonLoading(true)
     
-    local success, response = pcall(function()
-        return game:HttpGet(string.format("%s/api/verify?user_id=%s&key=%s", API_URL, uid, key))
-    end)
+    local query = "user_id=" .. HttpService:UrlEncode(uid) .. "&key=" .. HttpService:UrlEncode(key)
+    local ok, dataOrErr = requestJson("GET", apiUrl .. "/api/verify?" .. query)
     
-    if success then
-        local data
-        local decode_ok, err = pcall(function()
-            data = HttpService:JSONDecode(response)
-        end)
-        
-        if decode_ok and data.success then
-            notify("✅ Access Granted!", true)
+    if not ok then
+        -- Fallback for servers that only support /api/auth (JSON POST)
+        local payload = HttpService:JSONEncode({uid = uid, user_id = uid, key = key})
+        ok, dataOrErr = requestJson("POST", apiUrl .. "/api/auth", payload)
+    end
+    
+    if ok then
+        local data = dataOrErr
+        local successFlag = data.success == true or data.authenticated == true or data.valid == true
+        if successFlag then
+            notify("??? Access Granted!", true)
             
             TweenService:Create(LoginBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.Success}):Play()
             setButtonLoading(false)
-            LoginBtn.Text = "✓ SUCCESS"
-            BtnIcon.Text = "✓"
+            LoginBtn.Text = "??? SUCCESS"
+            BtnIcon.Text = "???"
             
             task.wait(1)
             
@@ -1094,7 +1143,8 @@ local function handleLogin()
             
             print("[Banana Hub] Loader finished successfully.")
         else
-            notify("❌ " .. (data and data.error or "Invalid credentials"), false)
+            local errMsg = data.error or data.message or data.reason or "Invalid credentials"
+            notify("??? " .. tostring(errMsg), false)
             setButtonLoading(false)
             
             local originalPos = LoginBtn.Position
@@ -1107,7 +1157,12 @@ local function handleLogin()
             TweenService:Create(LoginBtn, TweenInfo.new(0.04), {Position = originalPos}):Play()
         end
     else
-        notify("❌ Connection failed (Server Offline)", false)
+        local errLabel = tostring(dataOrErr or "")
+        local msg = "??? Connection failed"
+        if errLabel ~= "" then
+            msg = msg .. " (" .. errLabel .. ")"
+        end
+        notify(msg, false)
         setButtonLoading(false)
     end
 end

@@ -89,39 +89,15 @@ def generate_loader_script(user_id: str, key: str) -> str:
     """Generate Lua loader script for user."""
     website_url = getattr(Config, 'WEBSITE_URL', 'https://banana-hub.onrender.com')
     
-    return f"""-- 🍌 BANANA HUB ENTERPRISE LOADER
--- User: {user_id}
--- Key: {key}
+    return f"""-- ?? BANANA HUB ENTERPRISE LOADER
 -- Generated: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S UTC')}
 
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-
 local WEBSITE_URL = "{website_url}"
-local USER_ID = "{user_id}"
-local KEY = "{key}"
 
-print("🍌 Banana Hub - Initializing...")
-print("👤 User ID: " .. USER_ID)
-
--- Authentication & Script Loading
-local function authenticateAndLoad()
-    local success, result = pcall(function()
-        return game:HttpGet(WEBSITE_URL .. "/script.lua?user_id=" .. USER_ID .. "&key=" .. KEY)
-    end)
-    
-    if success then
-        print("✅ Authentication successful!")
-        print("🚀 Loading Banana Hub...")
-        loadstring(result)()
-    else
-        warn("❌ Authentication failed: " .. tostring(result))
-        warn("💡 Please verify your license key and internet connection")
-    end
-end
-
-authenticateAndLoad()
+getgenv().API_URL = WEBSITE_URL
+loadstring(game:HttpGet(WEBSITE_URL .. "/script.lua"))()
 """
+
 
 
 def safe_get_user_data(user_id: str) -> Dict[str, Any]:
@@ -883,41 +859,6 @@ def api_create_backup():
 # ==============================================================================
 # 📜 SCRIPT SERVING ROUTES
 # ==============================================================================
-
-@app.route('/script.lua')
-def get_script():
-    """Serve the loader script for authenticated users."""
-    try:
-        user_id = request.args.get('user_id', '')
-        key = request.args.get('key', '')
-        
-        if not user_id or not key:
-            return "-- Error: Missing authentication credentials", 400
-        
-        user = db.get_user(user_id)
-        if not user or user.get('key', '').upper() != key.upper():
-            return "-- Error: Invalid credentials", 401
-        
-        if db.is_blacklisted(user_id):
-            return "-- Error: Account has been banned", 403
-        
-        try:
-            db.log_event('script_access', user_id, request.remote_addr, 'Loader script accessed')
-        except Exception:
-            pass
-        
-        loader = generate_loader_script(user_id, key)
-        
-        return app.response_class(
-            response=loader,
-            status=200,
-            mimetype='text/plain'
-        )
-        
-    except Exception as e:
-        log.error(f"Script serve error: {e}")
-        return f"-- Error: {str(e)}", 500
-
 
 @app.route('/main.lua')
 def get_main_script():

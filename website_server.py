@@ -528,8 +528,6 @@ def api_trial_start():
         if not discord_id.isdigit():
             return jsonify({'success': False, 'error': 'Invalid Discord ID'}), 400
 
-        if not is_discord_member(discord_id):
-            return jsonify({'success': False, 'error': 'Please join the Discord server and try again'}), 403
 
         # If user already has an active trial, return it
         active = db.get_active_trial_by_user(discord_id)

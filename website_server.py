@@ -698,7 +698,7 @@ def api_redeem():
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 @app.route('/api/check_key', methods=['POST'])
-def api_check_key():
+def api_check_key_public():
     try:
         data = request.json
         key = str(data.get('key', '')).strip()

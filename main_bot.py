@@ -110,17 +110,27 @@ async def send_verification_email(email: str, code: str) -> bool:
         # Run SMTP in thread to not block
         def send_email():
             try:
-                with smtplib.SMTP(smtp_host, smtp_port) as server:
-                    server.starttls()
-                    server.login(smtp_user, smtp_pass)
-                    server.sendmail(smtp_from, email, msg.as_string())
+                # 10 second timeout for SMTP
+                if smtp_port == 465:
+                    # Use SSL for port 465
+                    with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10) as server:
+                        server.login(smtp_user, smtp_pass)
+                        server.sendmail(smtp_from, email, msg.as_string())
+                else:
+                    # Use STARTTLS for port 587
+                    with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
+                        server.starttls()
+                        server.login(smtp_user, smtp_pass)
+                        server.sendmail(smtp_from, email, msg.as_string())
+
                 log.info(f"📧 Verification email sent to: {email}")
+                return True
             except Exception as e:
                 log.error(f"📧 Failed to send email: {e}")
+                return False
         
         loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, send_email)
-        return True
+        return await loop.run_in_executor(None, send_email)
         
     except Exception as e:
         log.error(f"📧 Email error: {e}")

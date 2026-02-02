@@ -657,6 +657,61 @@ def trial_step3():
         return "<h1>Trial step3 failed.</h1>", 500
 
 # ==============================================================================
+# 🔑 REDEEM & STATUS ROUTES
+# ==============================================================================
+
+@app.route('/redeem')
+def redeem_page():
+    return render_template_string(TEMPLATES['redeem'])
+
+@app.route('/status')
+def status_page():
+    return render_template_string(TEMPLATES['status'])
+
+@app.route('/api/redeem', methods=['POST'])
+def api_redeem():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'success': False, 'error': 'Invalid request'}), 400
+
+        key = str(data.get('key', '')).strip()
+        discord_id = str(data.get('discord_id', '')).strip()
+        username = str(data.get('username', '')).strip()
+        password = str(data.get('password', '')).strip()
+        email = str(data.get('email', '')).strip()
+
+        if not all([key, discord_id, username, password, email]):
+             return jsonify({'success': False, 'error': 'All fields are required'}), 400
+        
+        if not discord_id.isdigit():
+             return jsonify({'success': False, 'error': 'Discord ID must be numbers only'}), 400
+
+        success, message = db.redeem_web_license(key, discord_id, username, password, email)
+        
+        response = {'success': success}
+        response['message' if success else 'error'] = message
+        return jsonify(response)
+
+    except Exception as e:
+        log.error(f"Redeem API error: {e}")
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+@app.route('/api/check_key', methods=['POST'])
+def api_check_key():
+    try:
+        data = request.json
+        key = str(data.get('key', '')).strip()
+        if not key:
+            return jsonify({'valid': False}), 400
+            
+        result = db.check_key_status(key)
+        return jsonify(result)
+    except Exception as e:
+        log.error(f"Check key API error: {e}")
+        return jsonify({'valid': False}), 500
+
+# ==============================================================================
 # 👤 USER DASHBOARD ROUTES
 # ==============================================================================
 

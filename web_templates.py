@@ -1408,12 +1408,196 @@ function copyTrialLoader() {
 # Due to character limits, I'll continue in the next part with DASHBOARD_PAGE, ADMIN_PAGE, and the multi-page navigation system...
 
 # ==============================================================================
+# 🔑 REDEEM PAGE (Register with Key)
+# ==============================================================================
+
+REDEEM_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+    <a href="/" class="btn btn-ghost" style="position: absolute; top: 2rem; left: 2rem;">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+    
+    <div class="card fade-in" style="max-width: 480px; width: 100%; padding: 2.5rem;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h2 style="margin-bottom: 0.5rem;">Create Account</h2>
+            <p style="color: var(--text-muted);">Redeem your license key to get started</p>
+        </div>
+
+        <form onsubmit="handleRedeem(event)">
+            <div class="form-group">
+                <label class="form-label">License Key</label>
+                <input type="text" id="key" class="form-input" placeholder="BANANA-XXX-XXX-XXX" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Discord ID</label>
+                <input type="text" id="discord_id" class="form-input" placeholder="Your Discord User ID (Numbers)" required>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Required for script whitelist</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" id="username" class="form-input" placeholder="Choose a username" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" id="password" class="form-input" placeholder="Choose a password" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" id="email" class="form-input" placeholder="For verification & recovery" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                <i class="fas fa-certificate"></i>
+                <span>Redeem & Register</span>
+            </button>
+        </form>
+        
+        <div id="status_msg" style="margin-top: 1.5rem; display: none;"></div>
+        
+        <div style="text-align: center; margin-top: 1.5rem;">
+            <a href="/login" style="font-size: 0.9rem; color: var(--primary);">Already have an account? Login</a>
+        </div>
+    </div>
+</div>
+
+<script>
+async function handleRedeem(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const msg = document.getElementById('status_msg');
+    
+    const key = document.getElementById('key').value.trim();
+    const discord_id = document.getElementById('discord_id').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const email = document.getElementById('email').value.trim();
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    msg.style.display = 'none';
+
+    try {
+        const res = await fetch('/api/redeem', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ key, discord_id, username, password, email })
+        });
+        const data = await res.json();
+        
+        msg.style.display = 'block';
+        if (data.success) {
+            msg.innerHTML = `<div class="badge badge-success" style="width:100%"><i class="fas fa-check"></i> ${data.message}</div>`;
+            setTimeout(() => window.location.href = '/login', 2000);
+        } else {
+            msg.innerHTML = `<div class="badge badge-error" style="width:100%"><i class="fas fa-times"></i> ${data.error}</div>`;
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-certificate"></i> Redeem & Register';
+        }
+    } catch (err) {
+        msg.style.display = 'block';
+        msg.innerHTML = `<div class="badge badge-error" style="width:100%"><i class="fas fa-wifi"></i> Connection Error</div>`;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-certificate"></i> Redeem & Register';
+    }
+}
+</script>
+""")
+
+# ==============================================================================
+# 🔍 STATUS PAGE
+# ==============================================================================
+
+STATUS_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;">
+    <a href="/" class="btn btn-ghost" style="position: absolute; top: 2rem; left: 2rem;">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+    
+    <div class="card fade-in" style="max-width: 500px; width: 100%; padding: 2.5rem;">
+        <h2 style="margin-bottom: 2rem; text-align: center;">Key Status Checker</h2>
+
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
+            <input type="text" id="status_key" class="form-input" placeholder="Enter License Key or Trial Key">
+            <button class="btn btn-primary" onclick="checkStatus()">Check</button>
+        </div>
+        
+        <div id="result_card" class="card" style="display: none; background: var(--bg-darker); padding: 1.5rem;">
+            <!-- Result populated by JS -->
+        </div>
+    </div>
+</div>
+
+<script>
+async function checkStatus() {
+    const key = document.getElementById('status_key').value.trim();
+    if (!key) return;
+    
+    const resDiv = document.getElementById('result_card');
+    resDiv.style.display = 'block';
+    resDiv.innerHTML = '<div style="text-align:center"><i class="fas fa-spinner fa-spin"></i> Checking...</div>';
+    
+    try {
+        const res = await fetch('/api/check_key', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ key })
+        });
+        const data = await res.json();
+        
+        if (data.valid) {
+            let infoHtml = '';
+            if (data.type === 'trial') {
+                infoHtml = `
+                    <div style="color: var(--primary); font-weight: bold; margin-bottom: 0.5rem;">🍌 TRIAL KEY</div>
+                    <div>Expires: ${data.expires}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">Remaining: ${data.remaining}</div>
+                `;
+            } else {
+                 infoHtml = `
+                    <div style="color: var(--success); font-weight: bold; margin-bottom: 0.5rem;">🔰 LICENSE KEY</div>
+                    <div>Owner: ${data.owner || 'Unclaimed'}</div>
+                    <div>HWID: ${data.hwid ? 'Locked' : 'Not Linked'}</div>
+                `;
+            }
+            
+            resDiv.innerHTML = `
+                <div style="text-align: center;">
+                    <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--success); margin-bottom: 1rem;"></i>
+                    <h3 style="margin-bottom: 1rem;">Valid Key</h3>
+                    <div style="text-align: left; background: var(--bg-card); padding: 1rem; border-radius: var(--radius-sm);">
+                        ${infoHtml}
+                    </div>
+                </div>
+            `;
+        } else {
+            resDiv.innerHTML = `
+                <div style="text-align: center;">
+                    <i class="fas fa-times-circle" style="font-size: 3rem; color: var(--error); margin-bottom: 1rem;"></i>
+                    <h3>Invalid Key</h3>
+                    <p style="color: var(--text-muted);">This key does not exist or has expired.</p>
+                </div>
+            `;
+        }
+    } catch (err) {
+        resDiv.innerHTML = `<div style="color: var(--error); text-align: center;">Error checking key</div>`;
+    }
+}
+</script>
+""")
+
+# ==============================================================================
 # 📦 TEMPLATES DICTIONARY
 # ==============================================================================
 
 TEMPLATES = {
     'landing': LANDING_PAGE,
     'login': LOGIN_PAGE,
+    'redeem': REDEEM_PAGE,
+    'status': STATUS_PAGE,
     'dashboard': None,  # Will be set below
     'admin': None,  # Will be set below
     'trial': None,  # Will be set below

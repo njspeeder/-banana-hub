@@ -1245,6 +1245,111 @@ class Database:
                 conn.close()
 
 
+
+    # ==========================================================================
+    # 🌐 WEB METHODS
+    # ==========================================================================
+
+    def redeem_web_license(self, key: str, discord_id: str, username: str, password: str, email: str) -> tuple[bool, str]:
+        """Redeem a license key and create web account transactionally."""
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            
+            # 1. Check Key
+            cur.execute("SELECT id, type, used FROM keys WHERE key = ?", (key,))
+            key_row = cur.fetchone()
+            if not key_row:
+                return False, "Invalid key"
+            if key_row['used']:
+                return False, "Key already used"
+
+            # 2. Check Username
+            cur.execute("SELECT 1 FROM accounts WHERE LOWER(username) = LOWER(?)", (username,))
+            if cur.fetchone():
+                return False, "Username taken"
+
+            # 3. Mark Key Used
+            now_iso = datetime.now(UTC).isoformat()
+            cur.execute("UPDATE keys SET used=1, used_by=?, used_at=? WHERE key=? AND used=0", (discord_id, now_iso, key))
+            if cur.rowcount == 0:
+                conn.rollback()
+                return False, "Key concurrency error"
+
+            # 4. Create/Update User (Hardware ID Link)
+            cur.execute("""
+                INSERT INTO users (discord_id, key, joined_at) VALUES (?, ?, ?)
+                ON CONFLICT(discord_id) DO UPDATE SET key=excluded.key
+            """, (discord_id, key, now_iso))
+
+            # 5. Create Account
+            password_hash = self.hash_password(password)
+            cur.execute("""
+                INSERT INTO accounts (discord_id, email, email_verified, username, password_hash, created_at)
+                VALUES (?, ?, 1, ?, ?, ?)
+            """, (discord_id, email, username, password_hash, now_iso))
+
+            conn.commit()
+            return True, "Success"
+
+        except sqlite3.IntegrityError as e:
+            if conn: conn.rollback()
+            if "accounts.discord_id" in str(e):
+                return False, "Discord ID already registered"
+            return False, f"Database error: {e}"
+        except Exception as e:
+            if conn: conn.rollback()
+            log.error(f"Web redeem error: {e}")
+            return False, "Server error"
+        finally:
+            if conn: conn.close()
+
+    def check_key_status(self, key: str) -> Dict[str, Any]:
+        """Check status of a license or trial key."""
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            
+            # Check License Keys
+            cur.execute("SELECT * FROM keys WHERE key = ?", (key,))
+            row = cur.fetchone()
+            if row:
+                return {
+                    'valid': True,
+                    'type': 'license',
+                    'key': row['key'],
+                    'used': bool(row['used']),
+                    'owner': row['used_by'],
+                    'hwid': None # Add HWID check if 'users' table has it
+                }
+            
+            # Check Trial Keys
+            cur.execute("SELECT * FROM trials WHERE key = ?", (key,))
+            row = cur.fetchone()
+            if row:
+                expires = datetime.fromisoformat(row['expires_at'])
+                now = datetime.now(UTC)
+                remaining = expires - now
+                is_valid = remaining.total_seconds() > 0
+                
+                return {
+                    'valid': is_valid,
+                    'type': 'trial',
+                    'key': row['key'],
+                    'expires': row['expires_at'],
+                    'remaining': str(remaining).split('.')[0] if is_valid else "Expired"
+                }
+
+            return {'valid': False}
+        except Exception as e:
+            log.error(f"Check key error: {e}")
+            return {'valid': False, 'error': str(e)}
+        finally:
+            if conn: conn.close()
+
+
 # ==============================================================================
 # 🌍 GLOBAL DATABASE INSTANCE
 # ==============================================================================

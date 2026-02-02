@@ -543,11 +543,11 @@ def api_trial_start():
         if not links.get("step1") or not links.get("step2"):
             return jsonify({'success': False, 'error': 'Linkvertise not configured'}), 500
 
-        session_data = db.create_trial_session(discord_id, request.remote_addr, hours=2)
-        if not session_data:
-            return jsonify({'success': False, 'error': 'Failed to start trial flow'}), 500
+        token = db.create_trial_session(discord_id, request.remote_addr)
+        if not token:
+            return jsonify({'success': False, 'error': 'Failed to start trial flow (Rate limited?)'}), 500
 
-        session['trial_token'] = session_data.get('token')
+        session['trial_token'] = token
         session['trial_discord_id'] = discord_id
         session.permanent = True
 

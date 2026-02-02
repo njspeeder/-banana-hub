@@ -17,7 +17,7 @@ import secrets
 import hashlib
 from datetime import datetime, UTC, timedelta
 from pathlib import Path
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List, Any, Tuple
 
 try:
     import bcrypt
@@ -129,6 +129,7 @@ class Database:
             expires_at TEXT,
             step1_done INTEGER DEFAULT 0,
             step2_done INTEGER DEFAULT 0,
+            step3_done INTEGER DEFAULT 0,
             ip_address TEXT
         );
 
@@ -565,7 +566,23 @@ class Database:
             if conn:
                 conn.close()
 
+    def mark_trial_step3(self, token: str) -> bool:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute("UPDATE trial_sessions SET step3_done = 1 WHERE token = ?", (token,))
+            conn.commit()
+            return cur.rowcount > 0
+        except Exception as e:
+            log.error(f"Error marking step3: {e}")
+            return False
+        finally:
+            if conn:
+                conn.close()
+
     def delete_trial_session(self, token: str) -> None:
+
         conn = None
         try:
             conn = self.get_connection()
@@ -1051,6 +1068,177 @@ class Database:
             return row['email'] if row else None
         except Exception as e:
             log.error(f"Error getting pending email: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+
+    # ==========================================================================
+    # 🎫 Trial Session Methods (Linkvertise Key System)
+    # ==========================================================================
+
+    def create_trial_session(self, discord_id: int | str, ip_address: str) -> Optional[str]:
+        """Create a new trial session with a unique token.
+        
+        Returns the token if created, None if user already has recent trial.
+        """
+        discord_id_str = str(discord_id)
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            
+            # Check for existing trial in last 24 hours
+            cur.execute(
+                "SELECT created_at FROM trial_sessions WHERE discord_id = ? ORDER BY created_at DESC LIMIT 1",
+                (discord_id_str,)
+            )
+            row = cur.fetchone()
+            if row:
+                last_trial = datetime.fromisoformat(row['created_at'])
+                if datetime.now(UTC) - last_trial < timedelta(hours=24):
+                    log.warning(f"Trial session rate limited for {discord_id_str}")
+                    return None
+            
+            # Generate cryptographic token
+            token = secrets.token_hex(32)  # 64 characters
+            created_at = datetime.now(UTC).isoformat()
+            expires_at = (datetime.now(UTC) + timedelta(minutes=30)).isoformat()
+            
+            cur.execute(
+                """INSERT INTO trial_sessions 
+                   (token, discord_id, created_at, expires_at, step1_done, step2_done, step3_done, ip_address)
+                   VALUES (?, ?, ?, ?, 0, 0, 0, ?)""",
+                (token, discord_id_str, created_at, expires_at, ip_address)
+            )
+            conn.commit()
+            log.info(f"Created trial session for {discord_id_str}: {token[:16]}...")
+            return token
+        except Exception as e:
+            log.error(f"Error creating trial session: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    def get_trial_session(self, token: str) -> Optional[Dict[str, Any]]:
+        """Get a trial session by token."""
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM trial_sessions WHERE token = ?", (token,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            return dict(row)
+        except Exception as e:
+            log.error(f"Error getting trial session: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    def update_trial_step(self, token: str, step_num: int, ip_address: str) -> Tuple[bool, str]:
+        """Mark a trial step as complete.
+        
+        Returns (success, message) tuple.
+        """
+        if step_num not in [1, 2, 3]:
+            return False, "Invalid step number"
+        
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            
+            # Get session
+            cur.execute("SELECT * FROM trial_sessions WHERE token = ?", (token,))
+            row = cur.fetchone()
+            
+            if not row:
+                return False, "Invalid or expired session"
+            
+            session = dict(row)
+            
+            # Check expiration
+            expires_at = datetime.fromisoformat(session['expires_at'])
+            if datetime.now(UTC) > expires_at:
+                return False, "Session expired. Please start a new trial."
+            
+            # Check IP consistency
+            if session['ip_address'] != ip_address:
+                log.warning(f"IP mismatch for trial {token[:16]}: {session['ip_address']} vs {ip_address}")
+                return False, "Session IP mismatch. Please start a new trial."
+            
+            # Check sequential completion
+            if step_num == 2 and not session['step1_done']:
+                return False, "Complete Step 1 first"
+            if step_num == 3 and not session['step2_done']:
+                return False, "Complete Step 2 first"
+            
+            # Check if already done
+            step_field = f"step{step_num}_done"
+            if session[step_field]:
+                return True, f"Step {step_num} already completed"
+            
+            # Mark step complete
+            cur.execute(f"UPDATE trial_sessions SET {step_field} = 1 WHERE token = ?", (token,))
+            conn.commit()
+            log.info(f"Trial step {step_num} completed for {token[:16]}...")
+            return True, f"Step {step_num} completed!"
+        except Exception as e:
+            log.error(f"Error updating trial step: {e}")
+            return False, "Database error"
+        finally:
+            if conn:
+                conn.close()
+
+    def generate_trial_key(self, token: str) -> Optional[str]:
+        """Generate a trial key after all steps are complete."""
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            
+            # Verify session
+            cur.execute("SELECT * FROM trial_sessions WHERE token = ?", (token,))
+            row = cur.fetchone()
+            
+            if not row:
+                return None
+            
+            session = dict(row)
+            
+            # Check all steps done
+            if not (session['step1_done'] and session['step2_done'] and session['step3_done']):
+                return None
+            
+            # Check expiration
+            expires_at = datetime.fromisoformat(session['expires_at'])
+            if datetime.now(UTC) > expires_at:
+                return None
+            
+            # Generate trial key
+            trial_key = f"TRIAL-{secrets.token_hex(4).upper()}-{secrets.token_hex(4).upper()}"
+            discord_id = session['discord_id']
+            ip_address = session['ip_address']
+            
+            # Store trial
+            created_at = datetime.now(UTC).isoformat()
+            trial_expires = (datetime.now(UTC) + timedelta(hours=24)).isoformat()
+            
+            cur.execute(
+                """INSERT OR REPLACE INTO trials (key, discord_id, created_at, expires_at, ip_address)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (trial_key, discord_id, created_at, trial_expires, ip_address)
+            )
+            conn.commit()
+            log.info(f"Generated trial key {trial_key} for {discord_id}")
+            return trial_key
+        except Exception as e:
+            log.error(f"Error generating trial key: {e}")
             return None
         finally:
             if conn:

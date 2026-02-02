@@ -173,8 +173,10 @@ def get_linkvertise_urls() -> Dict[str, str]:
     """Get Linkvertise step URLs from environment."""
     return {
         "step1": os.getenv("LINKVERTISE_STEP1_URL", "").strip(),
-        "step2": os.getenv("LINKVERTISE_STEP2_URL", "").strip()
+        "step2": os.getenv("LINKVERTISE_STEP2_URL", "").strip(),
+        "step3": os.getenv("LINKVERTISE_STEP3_URL", "").strip()
     }
+
 
 
 def generate_loader_script(user_id: str, key: str) -> str:
@@ -592,7 +594,7 @@ def trial_step1():
 
 @app.route('/trial/step2')
 def trial_step2():
-    """Linkvertise step 2 callback -> issue 24h key."""
+    """Linkvertise step 2 callback -> redirect to step 3."""
     try:
         token = session.get('trial_token')
         discord_id = session.get('trial_discord_id')
@@ -607,6 +609,36 @@ def trial_step2():
             return "<h1>Step 1 not completed.</h1>", 400
 
         db.mark_trial_step2(token)
+
+        links = get_linkvertise_urls()
+        if not links.get("step3"):
+            return "<h1>Linkvertise step 3 not configured.</h1>", 500
+
+        return redirect(links.get("step3"))
+    except Exception as e:
+        log.error(f"Trial step2 error: {e}")
+        return "<h1>Trial step2 failed.</h1>", 500
+
+
+@app.route('/trial/step3')
+def trial_step3():
+    """Linkvertise step 3 callback -> issue 24h trial key."""
+    try:
+        token = session.get('trial_token')
+        discord_id = session.get('trial_discord_id')
+        if not token or not discord_id:
+            return "<h1>Session missing. Start trial again.</h1>", 400
+
+        session_data = db.get_trial_session(token)
+        if not session_data:
+            return "<h1>Session expired. Start trial again.</h1>", 400
+
+        if not session_data.get('step1_done'):
+            return "<h1>Step 1 not completed.</h1>", 400
+        if not session_data.get('step2_done'):
+            return "<h1>Step 2 not completed.</h1>", 400
+
+        db.mark_trial_step3(token)
 
         trial = db.create_trial(discord_id, request.remote_addr, hours=24)
         if not trial:
@@ -623,8 +655,8 @@ def trial_step2():
 
         return redirect(f"/trial/dashboard?key={trial.get('key')}")
     except Exception as e:
-        log.error(f"Trial step2 error: {e}")
-        return "<h1>Trial step2 failed.</h1>", 500
+        log.error(f"Trial step3 error: {e}")
+        return "<h1>Trial step3 failed.</h1>", 500
 
 # ==============================================================================
 # 👤 USER DASHBOARD ROUTES

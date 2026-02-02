@@ -289,19 +289,6 @@ def get_system_stats() -> Dict[str, int]:
             'active_users': 0
         }
 
-# ==============================================================================
-# 🏠 PUBLIC ROUTES
-# ==============================================================================
-
-@app.route('/')
-def index():
-    """Landing page with modern design."""
-    try:
-        return render_template_string(TEMPLATES['landing'])
-    except Exception as e:
-        log.error(f"Landing page error: {e}", exc_info=True)
-
-
 def safe_get_user_analytics(user_id: str) -> Dict[str, Any]:
     """Get user analytics safely with fallback."""
     default_analytics = {

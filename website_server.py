@@ -351,7 +351,7 @@ def get_system_stats() -> Dict[str, int]:
 # ==============================================================================
 
 @app.route('/')
-def index():
+def landing_page():
     """Landing page with modern design."""
     try:
         return render_template_string(TEMPLATES['landing'])

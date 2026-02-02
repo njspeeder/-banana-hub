@@ -169,6 +169,14 @@ def is_discord_member(user_id: str) -> bool:
     return profile is not None
 
 
+def get_linkvertise_urls() -> Dict[str, str]:
+    """Get Linkvertise step URLs from environment."""
+    return {
+        "step1": os.getenv("LINKVERTISE_STEP1_URL", "").strip(),
+        "step2": os.getenv("LINKVERTISE_STEP2_URL", "").strip()
+    }
+
+
 def generate_loader_script(user_id: str, key: str) -> str:
     """Generate Lua loader script for user."""
     website_url = getattr(Config, 'WEBSITE_URL', 'https://banana-hub.onrender.com')
@@ -292,62 +300,168 @@ def index():
         return render_template_string(TEMPLATES['landing'])
     except Exception as e:
         log.error(f"Landing page error: {e}", exc_info=True)
+
+
+def safe_get_user_analytics(user_id: str) -> Dict[str, Any]:
+    """Get user analytics safely with fallback."""
+    default_analytics = {
+        'total_logins': 0,
+        'last_login': 'Never'
+    }
+    
+    try:
+        if not user_id:
+            return default_analytics
+            
+        user = db.get_user(user_id)
+        
+        if not user or not isinstance(user, dict):
+            return default_analytics
+        
+        return {
+            'total_logins': int(user.get('login_count', 0) or 0),
+            'last_login': str(user.get('last_login', 'Never') or 'Never'),
+        }
+        
+    except Exception as e:
+        log.warning(f"Analytics error for {user_id}: {e}")
+        return default_analytics
+
+
+def get_system_stats() -> Dict[str, int]:
+    """Get comprehensive system statistics."""
+    try:
+        users = db.get_all_users() or []
+        all_keys = db.get_all_keys() or []
+        blacklisted = db.get_blacklisted_users() or []
+        
+        unused_keys = [k for k in all_keys if k.get('used') == 0]
+        total_logins = sum(u.get('login_count', 0) for u in users)
+        
+        return {
+            'total_users': len(users),
+            'total_keys': len(all_keys),
+            'available_keys': len(unused_keys),
+            'total_logins': total_logins,
+            'total_blacklisted': len(blacklisted),
+            'active_users': len(users) - len(blacklisted)
+        }
+    except Exception as e:
+        log.error(f"Error getting system stats: {e}")
+        return {
+            'total_users': 0,
+            'total_keys': 0,
+            'available_keys': 0,
+            'total_logins': 0,
+            'total_blacklisted': 0,
+            'active_users': 0
+        }
+
+# ==============================================================================
+# 🏠 PUBLIC ROUTES
+# ==============================================================================
+
+@app.route('/')
+def index():
+    """Landing page with modern design."""
+    try:
+        return render_template_string(TEMPLATES['landing'])
+    except Exception as e:
+        log.error(f"Landing page error: {e}", exc_info=True)
         return f"<h1>Error Loading Page</h1><pre>{str(e)}</pre>", 500
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """User login page and authentication handler."""
+    """User login page and authentication handler.
+    
+    Supports two authentication methods:
+    1. Legacy: user_id + key
+    2. New: username + password
+    """
     if request.method == 'POST':
         try:
             data = request.get_json() if request.is_json else request.form
+            
+            # Check which auth method is being used
+            username = data.get('username', '').strip()
+            password = data.get('password', '').strip()
             user_id = data.get('user_id', '').strip()
             key = data.get('key', '').strip().upper()
             
-            if not user_id or not key:
-                return jsonify({'error': 'User ID and Key required'}), 400
+            discord_id = None
+            is_admin = False
             
-            # Verify user
-            user = db.get_user(user_id)
-            if not user:
-                log.warning(f"Login attempt for non-existent user: {user_id}")
-                return jsonify({'error': 'Invalid credentials'}), 401
-            
-            user_key = user.get('key', '').upper()
-            if user_key != key:
-                log.warning(f"Invalid key attempt for user: {user_id}")
-                return jsonify({'error': 'Invalid credentials'}), 401
-            
-            # Check blacklist
-            if db.is_blacklisted(user_id):
-                log.warning(f"Blacklisted user login attempt: {user_id}")
-                return jsonify({'error': 'Account banned'}), 403
+            if username and password:
+                # NEW AUTH: Username + Password
+                account = db.get_account_by_username(username)
+                if not account:
+                    log.warning(f"Login attempt for non-existent username: {username}")
+                    return jsonify({'error': 'Invalid credentials'}), 401
+                
+                # Verify password
+                if not db.verify_password(password, account.get('password_hash', '')):
+                    log.warning(f"Invalid password attempt for username: {username}")
+                    return jsonify({'error': 'Invalid credentials'}), 401
+                
+                discord_id = account.get('discord_id')
+                
+                # Check blacklist
+                if db.is_blacklisted(discord_id):
+                    log.warning(f"Blacklisted user login attempt: {discord_id}")
+                    return jsonify({'error': 'Account banned'}), 403
+                
+                log.info(f"Username/password login: {username}")
+                
+            elif user_id and key:
+                # LEGACY AUTH: User ID + Key
+                user = db.get_user(user_id)
+                if not user:
+                    log.warning(f"Login attempt for non-existent user: {user_id}")
+                    return jsonify({'error': 'Invalid credentials'}), 401
+                
+                user_key = user.get('key', '').upper()
+                if user_key != key:
+                    log.warning(f"Invalid key attempt for user: {user_id}")
+                    return jsonify({'error': 'Invalid credentials'}), 401
+                
+                # Check blacklist
+                if db.is_blacklisted(user_id):
+                    log.warning(f"Blacklisted user login attempt: {user_id}")
+                    return jsonify({'error': 'Account banned'}), 403
+                
+                discord_id = user_id
+                log.info(f"Legacy user_id/key login: {user_id}")
+            else:
+                return jsonify({'error': 'Username/Password or User ID/Key required'}), 400
             
             # Clear old session and create new one
             session.clear()
             
             # Set session data
-            session['user_id'] = user_id
-            session['key'] = key
+            session['user_id'] = discord_id
+            session['username'] = username if username else None
             session.permanent = True
             
             # Check if admin
             try:
                 owner_id = str(getattr(Config, 'OWNER_ID', ''))
-                session['is_admin'] = (user_id == owner_id)
+                is_admin = (str(discord_id) == owner_id)
+                session['is_admin'] = is_admin
             except Exception:
                 session['is_admin'] = False
             
             # Log login
             try:
-                db.log_event('web_login', user_id, request.remote_addr, 'Web panel login')
+                auth_method = 'username/password' if username else 'legacy key'
+                db.log_event('web_login', discord_id, request.remote_addr, f'Web panel login ({auth_method})')
             except Exception as e:
                 log.warning(f"Failed to log login event: {e}")
             
             # Return appropriate redirect
             redirect_url = '/admin' if session['is_admin'] else '/dashboard'
             
-            log.info(f"Successful login: {user_id} (Admin: {session['is_admin']})")
+            log.info(f"Successful login: {discord_id} (Admin: {session['is_admin']})")
             
             return jsonify({
                 'success': True,
@@ -414,7 +528,7 @@ def logout():
 
 @app.route('/api/trial/start', methods=['POST'])
 def api_trial_start():
-    """Create or return an active 24-hour trial key."""
+    """Start the Linkvertise trial flow (step 1)."""
     try:
         data = request.get_json() if request.is_json else request.form
         discord_id = str((data.get('discord_id') or '')).strip()
@@ -428,23 +542,102 @@ def api_trial_start():
         if not is_discord_member(discord_id):
             return jsonify({'success': False, 'error': 'Please join the Discord server and try again'}), 403
 
+        # If user already has an active trial, return it
+        active = db.get_active_trial_by_user(discord_id)
+        if active:
+            return jsonify({
+                'success': True,
+                'key': active.get('key'),
+                'expires_at': active.get('expires_at'),
+                'redirect': f"/trial/dashboard?key={active.get('key')}"
+            })
+
+        links = get_linkvertise_urls()
+        if not links.get("step1") or not links.get("step2"):
+            return jsonify({'success': False, 'error': 'Linkvertise not configured'}), 500
+
+        session_data = db.create_trial_session(discord_id, request.remote_addr, hours=2)
+        if not session_data:
+            return jsonify({'success': False, 'error': 'Failed to start trial flow'}), 500
+
+        session['trial_token'] = session_data.get('token')
+        session['trial_discord_id'] = discord_id
+        session.permanent = True
+
+        try:
+            db.log_event('trial_flow_start', discord_id, request.remote_addr, "Started trial flow")
+        except Exception:
+            pass
+
+        return jsonify({
+            'success': True,
+            'step1_url': links.get("step1")
+        })
+    except Exception as e:
+        log.error(f"Trial start error: {e}")
+        return jsonify({'success': False, 'error': 'Trial start failed'}), 500
+
+
+@app.route('/trial/step1')
+def trial_step1():
+    """Linkvertise step 1 callback."""
+    try:
+        token = session.get('trial_token')
+        discord_id = session.get('trial_discord_id')
+        if not token or not discord_id:
+            return "<h1>Session missing. Start trial again.</h1>", 400
+
+        session_data = db.get_trial_session(token)
+        if not session_data:
+            return "<h1>Session expired. Start trial again.</h1>", 400
+
+        db.mark_trial_step1(token)
+
+        links = get_linkvertise_urls()
+        if not links.get("step2"):
+            return "<h1>Linkvertise not configured.</h1>", 500
+
+        return redirect(links.get("step2"))
+    except Exception as e:
+        log.error(f"Trial step1 error: {e}")
+        return "<h1>Trial step1 failed.</h1>", 500
+
+
+@app.route('/trial/step2')
+def trial_step2():
+    """Linkvertise step 2 callback -> issue 24h key."""
+    try:
+        token = session.get('trial_token')
+        discord_id = session.get('trial_discord_id')
+        if not token or not discord_id:
+            return "<h1>Session missing. Start trial again.</h1>", 400
+
+        session_data = db.get_trial_session(token)
+        if not session_data:
+            return "<h1>Session expired. Start trial again.</h1>", 400
+
+        if not session_data.get('step1_done'):
+            return "<h1>Step 1 not completed.</h1>", 400
+
+        db.mark_trial_step2(token)
+
         trial = db.create_trial(discord_id, request.remote_addr, hours=24)
         if not trial:
-            return jsonify({'success': False, 'error': 'Failed to create trial'}), 500
+            return "<h1>Failed to create trial.</h1>", 500
 
         try:
             db.log_event('trial_created', discord_id, request.remote_addr, f"Trial key: {trial.get('key')}")
         except Exception:
             pass
 
-        return jsonify({
-            'success': True,
-            'key': trial.get('key'),
-            'expires_at': trial.get('expires_at')
-        })
+        db.delete_trial_session(token)
+        session.pop('trial_token', None)
+        session.pop('trial_discord_id', None)
+
+        return redirect(f"/trial/dashboard?key={trial.get('key')}")
     except Exception as e:
-        log.error(f"Trial start error: {e}")
-        return jsonify({'success': False, 'error': 'Trial creation failed'}), 500
+        log.error(f"Trial step2 error: {e}")
+        return "<h1>Trial step2 failed.</h1>", 500
 
 # ==============================================================================
 # 👤 USER DASHBOARD ROUTES

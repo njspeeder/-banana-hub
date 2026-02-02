@@ -11,6 +11,9 @@ import secrets
 import string
 import threading
 import time
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from contextlib import asynccontextmanager
 from datetime import datetime, UTC
 from typing import List, Optional, Dict, Any
@@ -47,6 +50,97 @@ else:
     log.info("🚀 Running in PRODUCTION mode")
 
 bot_api = BananaAPI(Config.WEBSITE_URL, Config.ADMIN_API_KEY)
+
+# ==============================================================================
+# 🔑 REDEMPTION SESSION TRACKING
+# ==============================================================================
+
+# Active redemption sessions: {discord_id: {step, key, email, verified_email, username}}
+# Steps: 1=waiting_key, 2=waiting_email, 3=waiting_code, 4=waiting_username, 5=waiting_password
+redemption_sessions: Dict[int, Dict[str, Any]] = {}
+
+
+def generate_verification_code() -> str:
+    """Generate a 6-digit verification code."""
+    return ''.join(secrets.choice(string.digits) for _ in range(6))
+
+
+async def send_verification_email(email: str, code: str) -> bool:
+    """Send verification email with code. Returns True if successful."""
+    smtp_host = getattr(Config, 'SMTP_HOST', '')
+    smtp_port = getattr(Config, 'SMTP_PORT', 587)
+    smtp_user = getattr(Config, 'SMTP_USER', '')
+    smtp_pass = getattr(Config, 'SMTP_PASSWORD', '')
+    smtp_from = getattr(Config, 'SMTP_FROM', 'noreply@bananahub.com')
+    
+    # In DEV mode without SMTP, log code and return success
+    if DEV_MODE and not smtp_user:
+        log.info(f"📧 [DEV] Email verification code for {email}: {code}")
+        return True
+    
+    if not smtp_user or not smtp_pass:
+        log.warning("📧 SMTP not configured, skipping email send")
+        return False
+    
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = '🍌 Banana Hub - Email Verification Code'
+        msg['From'] = smtp_from
+        msg['To'] = email
+        
+        html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; background: #0A0E1A; color: white; padding: 20px;">
+            <div style="max-width: 500px; margin: 0 auto; background: #141824; padding: 30px; border-radius: 12px;">
+                <h1 style="color: #FACC15; text-align: center;">🍌 Banana Hub</h1>
+                <h2 style="text-align: center;">Email Verification</h2>
+                <p style="text-align: center; font-size: 18px;">Your verification code is:</p>
+                <div style="background: #1F2937; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                    <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #FACC15;">{code}</span>
+                </div>
+                <p style="text-align: center; color: #9CA3AF;">This code expires in 10 minutes.</p>
+                <p style="text-align: center; color: #6B7280; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(html, 'html'))
+        
+        # Run SMTP in thread to not block
+        def send_email():
+            try:
+                with smtplib.SMTP(smtp_host, smtp_port) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(smtp_from, email, msg.as_string())
+                log.info(f"📧 Verification email sent to: {email}")
+            except Exception as e:
+                log.error(f"📧 Failed to send email: {e}")
+        
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, send_email)
+        return True
+        
+    except Exception as e:
+        log.error(f"📧 Email error: {e}")
+        return False
+
+
+def validate_email(email: str) -> bool:
+    """Basic email validation."""
+    return bool(re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email.strip()))
+
+
+def validate_username(username: str) -> bool:
+    """Validate username: 3-20 chars, alphanumeric and underscore only."""
+    return bool(re.match(r'^[a-zA-Z0-9_]{3,20}$', username.strip()))
+
+
+def validate_password(password: str) -> bool:
+    """Validate password: at least 6 characters."""
+    return len(password) >= 6
+
 
 def generate_key(length: int = 12) -> str:
     alphabet = string.ascii_uppercase + string.digits
@@ -434,6 +528,268 @@ class BananaBot(commands.Bot):
             )
         )
 
+    async def on_message(self, message: discord.Message) -> None:
+        """Handle DM messages for redemption flow."""
+        # Ignore bot messages
+        if message.author.bot:
+            return
+        
+        # Only handle DMs
+        if not isinstance(message.channel, discord.DMChannel):
+            return
+        
+        user_id = message.author.id
+        
+        # Check if user has an active redemption session
+        if user_id not in redemption_sessions:
+            return
+        
+        session = redemption_sessions[user_id]
+        content = message.content.strip()
+        
+        # Check for timeout (30 minutes)
+        if time.time() - session.get('started_at', 0) > 1800:
+            del redemption_sessions[user_id]
+            embed = create_embed(
+                "⏰ Session Expired",
+                "Your redemption session expired. Use `/redeem` to start again.",
+                discord.Color.red()
+            )
+            await message.channel.send(embed=embed)
+            return
+        
+        # Handle cancel
+        if content.lower() == 'cancel':
+            del redemption_sessions[user_id]
+            embed = create_embed(
+                "❌ Cancelled",
+                "Redemption process cancelled. Use `/redeem` to start again.",
+                discord.Color.red()
+            )
+            await message.channel.send(embed=embed)
+            return
+        
+        step = session.get('step', 1)
+        
+        try:
+            if step == 1:
+                # Waiting for key
+                key_value = content.upper()
+                
+                if not validate_key_format(key_value):
+                    embed = create_embed(
+                        "❌ Invalid Format",
+                        "That doesn't look right. Keys must be: `BANANA-XXX-XXX-XXX`\n\n**Please try again:**",
+                        discord.Color.red()
+                    )
+                    await message.channel.send(embed=embed)
+                    return
+                
+                # Check key availability
+                if not db.check_key_available(key_value):
+                    embed = create_embed(
+                        "❌ Key Unavailable",
+                        "This key is invalid, already used, or expired.\n\n**Please try a different key:**",
+                        discord.Color.red()
+                    )
+                    await message.channel.send(embed=embed)
+                    return
+                
+                # Key is valid! Move to step 2
+                session['key'] = key_value
+                session['step'] = 2
+                
+                embed = create_embed(
+                    "✅ Key Verified!",
+                    f"Key `{key_value}` is valid!\n\n**📧 Step 2/5: Email Address**\n\nPlease send your email address.\nWe'll send a verification code to confirm it's yours.",
+                    discord.Color.green()
+                )
+                await message.channel.send(embed=embed)
+            
+            elif step == 2:
+                # Waiting for email
+                email = content.lower().strip()
+                
+                if not validate_email(email):
+                    embed = create_embed(
+                        "❌ Invalid Email",
+                        "That doesn't look like a valid email address.\n\n**Please try again:**",
+                        discord.Color.red()
+                    )
+                    await message.channel.send(embed=embed)
+                    return
+                
+                # Generate and send verification code
+                code = generate_verification_code()
+                
+                # Store in database
+                db.store_email_code(user_id, email, code)
+                
+                # Send email
+                email_sent = await send_verification_email(email, code)
+                
+                session['email'] = email
+                session['step'] = 3
+                
+                if email_sent:
+                    embed = create_embed(
+                        "📧 Verification Code Sent!",
+                        f"We've sent a **6-digit code** to `{email}`\n\n**🔢 Step 3/5: Verify Email**\n\nPlease send the code now.\n\n*Check your spam folder if you don't see it!*",
+                        discord.Color.blue()
+                    )
+                    if DEV_MODE and not getattr(Config, 'SMTP_USER', ''):
+                        embed.add_field(
+                            name="🔧 Dev Mode",
+                            value=f"Check console for code (SMTP not configured)",
+                            inline=False
+                        )
+                else:
+                    # Email failed but we can continue in dev mode
+                    if DEV_MODE:
+                        embed = create_embed(
+                            "📧 Verification Code",
+                            f"**🔢 Step 3/5: Verify Email**\n\nCheck the console for your code (email not configured).",
+                            discord.Color.orange()
+                        )
+                    else:
+                        embed = create_embed(
+                            "❌ Email Failed",
+                            "Couldn't send verification email. Please try again or use a different email.",
+                            discord.Color.red()
+                        )
+                        session['step'] = 2
+                
+                await message.channel.send(embed=embed)
+            
+            elif step == 3:
+                # Waiting for verification code
+                code = content.strip()
+                
+                # Verify code
+                verified_email = db.verify_email_code(user_id, code)
+                
+                if not verified_email:
+                    embed = create_embed(
+                        "❌ Invalid Code",
+                        "That code is incorrect or expired.\n\n**Please try again:**",
+                        discord.Color.red()
+                    )
+                    await message.channel.send(embed=embed)
+                    return
+                
+                # Email verified!
+                session['verified_email'] = verified_email
+                session['step'] = 4
+                
+                embed = create_embed(
+                    "✅ Email Verified!",
+                    f"Email `{verified_email}` confirmed!\n\n**👤 Step 4/5: Choose Username**\n\nPick a username for your account.\n\n*3-20 characters, letters, numbers, and underscores only.*",
+                    discord.Color.green()
+                )
+                await message.channel.send(embed=embed)
+            
+            elif step == 4:
+                # Waiting for username
+                username = content.strip()
+                
+                if not validate_username(username):
+                    embed = create_embed(
+                        "❌ Invalid Username",
+                        "Username must be 3-20 characters.\nOnly letters, numbers, and underscores allowed.\n\n**Please try again:**",
+                        discord.Color.red()
+                    )
+                    await message.channel.send(embed=embed)
+                    return
+                
+                # Check availability
+                if not db.check_username_available(username):
+                    embed = create_embed(
+                        "❌ Username Taken",
+                        f"`{username}` is already taken.\n\n**Please choose a different username:**",
+                        discord.Color.red()
+                    )
+                    await message.channel.send(embed=embed)
+                    return
+                
+                # Username is good!
+                session['username'] = username
+                session['step'] = 5
+                
+                embed = create_embed(
+                    "✅ Username Available!",
+                    f"Username `{username}` is yours!\n\n**🔒 Step 5/5: Set Password**\n\nChoose a secure password.\n\n*Minimum 6 characters.*",
+                    discord.Color.green()
+                )
+                await message.channel.send(embed=embed)
+            
+            elif step == 5:
+                # Waiting for password
+                password = content  # Don't strip, preserve spaces
+                
+                if not validate_password(password):
+                    embed = create_embed(
+                        "❌ Password Too Short",
+                        "Password must be at least 6 characters.\n\n**Please try again:**",
+                        discord.Color.red()
+                    )
+                    await message.channel.send(embed=embed)
+                    return
+                
+                # All steps complete! Create the account
+                key = session['key']
+                email = session['verified_email']
+                username = session['username']
+                
+                # Register user with key (if new user)
+                existing_user = db.get_user(user_id)
+                if not existing_user or not existing_user.get('key'):
+                    db.register_user(user_id, key)
+                    db.mark_key_redeemed(key, user_id)
+                
+                # Create account
+                success = db.create_account(user_id, email, username, password)
+                
+                if success:
+                    db.log_event("account_created", str(user_id), None, f"Username: {username}")
+                    
+                    embed = create_embed(
+                        "🎉 Account Created!",
+                        f"Welcome to Banana Hub!\n\n"
+                        f"**Username:** `{username}`\n"
+                        f"**Email:** `{email}`\n\n"
+                        f"You can now login at:\n{Config.WEBSITE_URL}/login\n\n"
+                        f"Use your **username** and **password** to login.",
+                        discord.Color.green()
+                    )
+                    embed.add_field(
+                        name="🚀 Next Steps",
+                        value="• Use `/panel` to access dashboard\n• Get your loader script\n• Start using Banana Hub!",
+                        inline=False
+                    )
+                    
+                    log.info(f"✅ Account created: {username} (Discord: {user_id})")
+                else:
+                    embed = create_embed(
+                        "❌ Account Creation Failed",
+                        "Something went wrong. Please try `/redeem` again.",
+                        discord.Color.red()
+                    )
+                
+                # Clean up session
+                del redemption_sessions[user_id]
+                await message.channel.send(embed=embed)
+        
+        except Exception as e:
+            log.error(f"Redemption flow error for {user_id}: {e}", exc_info=True)
+            embed = create_embed(
+                "❌ Error",
+                "Something went wrong. Please try `/redeem` again.",
+                discord.Color.red()
+            )
+            if user_id in redemption_sessions:
+                del redemption_sessions[user_id]
+            await message.channel.send(embed=embed)
+
     async def setup_admin_role(self, guild: discord.Guild) -> Optional[discord.Role]:
         try:
             existing_role = discord.utils.get(guild.roles, name=self.admin_role_name)
@@ -511,71 +867,96 @@ class UserCog(commands.Cog, name="User"):
     def __init__(self, bot: BananaBot) -> None:
         self.bot = bot
 
-    @app_commands.command(name="redeem", description="Redeem your Banana Hub license key")
-    @app_commands.describe(key="Your BANANA-XXX-XXX-XXX license key")
-    async def redeem(self, interaction: discord.Interaction, key: str):
+    @app_commands.command(name="redeem", description="Redeem your Banana Hub license key (starts DM flow)")
+    async def redeem(self, interaction: discord.Interaction):
+        """Start the 5-step redemption process via DM."""
         await interaction.response.defer(ephemeral=True)
-        key_value = key.strip().upper()
         
-        if not validate_key_format(key_value):
+        user_id = interaction.user.id
+        
+        # Check if already has an account
+        existing_account = db.get_account_by_discord(user_id)
+        if existing_account:
             embed = create_embed(
-                "❌ Invalid Format",
-                "Keys must be: `BANANA-XXX-XXX-XXX`",
-                discord.Color.red()
+                "⚠️ Already Registered",
+                f"You already have an account!\n\n**Username:** `{existing_account['username']}`\n\nUse the web panel to login with your username and password.",
+                discord.Color.orange()
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
             return
-
-        async with safe_db_operation("redeem_key"):
+        
+        # Check if already has a key (legacy user)
+        existing_user = db.get_user(user_id)
+        if existing_user and existing_user.get("key"):
+            # Legacy user - they need to complete account setup
+            embed = create_embed(
+                "🔄 Account Setup Required",
+                "You have a key but need to set up your account with username/password.\n\n**Check your DMs to continue!**",
+                discord.Color.blue()
+            )
+            # Start them at step 2 (email) since they already have a key
+            redemption_sessions[user_id] = {
+                'step': 2,
+                'key': existing_user['key'],
+                'email': None,
+                'verified_email': None,
+                'username': None,
+                'started_at': time.time()
+            }
+        else:
+            # New user - start from step 1
+            embed = create_embed(
+                "🍌 Key Redemption",
+                "Let's set up your Banana Hub account!\n\n**Check your DMs to continue!**\n\nI'll walk you through a quick 5-step process.",
+                discord.Color.gold()
+            )
+            redemption_sessions[user_id] = {
+                'step': 1,
+                'key': None,
+                'email': None,
+                'verified_email': None,
+                'username': None,
+                'started_at': time.time()
+            }
+        
+        await interaction.followup.send(embed=embed, ephemeral=True)
+        
+        # Send DM to start the flow
+        try:
+            dm_channel = await interaction.user.create_dm()
+            
+            session = redemption_sessions[user_id]
+            if session['step'] == 1:
+                dm_embed = create_embed(
+                    "🔑 Step 1/5: License Key",
+                    "Welcome! Let's get you set up.\n\n**Please send your license key now.**\n\nFormat: `BANANA-XXX-XXX-XXX`",
+                    discord.Color.gold()
+                )
+            else:
+                dm_embed = create_embed(
+                    "� Step 2/5: Email Address",
+                    f"Your key: `{session['key']}`\n\n**Please send your email address.**\n\nWe'll send a verification code to confirm it's yours.",
+                    discord.Color.gold()
+                )
+            
+            dm_embed.set_footer(text="Type 'cancel' to stop the process.")
+            await dm_channel.send(embed=dm_embed)
+            
+        except discord.Forbidden:
+            # Can't DM user
+            if user_id in redemption_sessions:
+                del redemption_sessions[user_id]
+            
+            error_embed = create_embed(
+                "❌ Can't Send DM",
+                "Please enable DMs from server members and try again!",
+                discord.Color.red()
+            )
             try:
-                if not db.check_key_available(key_value):
-                    embed = create_embed(
-                        "❌ Key Unavailable",
-                        "This key is invalid, already used, or expired.",
-                        discord.Color.red()
-                    )
-                    await interaction.followup.send(embed=embed, ephemeral=True)
-                    return
+                await interaction.followup.send(embed=error_embed, ephemeral=True)
+            except:
+                pass
 
-                existing_user = db.get_user(interaction.user.id)
-                if existing_user and existing_user.get("key"):
-                    embed = create_embed(
-                        "⚠️ Already Have Key",
-                        f"You already have: `{existing_user['key']}`\n\nContact an admin to change keys.",
-                        discord.Color.orange()
-                    )
-                    await interaction.followup.send(embed=embed, ephemeral=True)
-                    return
-
-                db.register_user(interaction.user.id, key_value)
-                db.mark_key_redeemed(key_value, interaction.user.id)
-                db.log_event("key_redeemed", str(interaction.user.id), None, f"Redeemed {key_value}")
-
-                embed = create_embed(
-                    "✅ Key Redeemed!",
-                    f"Welcome to Banana Hub!\n\n**Your Key:** ||`{key_value}`||",
-                    discord.Color.green()
-                )
-                embed.add_field(
-                    name="🚀 Next Steps",
-                    value="• Use `/panel` to access dashboard\n• Get your loader script\n• Start using Banana Hub!",
-                    inline=False
-                )
-                
-                if not IS_LOCALHOST:
-                    embed.add_field(
-                        name="🌐 Web Login",
-                        value=f"[Login Here]({Config.WEBSITE_URL}/login)\n**User ID:** `{interaction.user.id}`\n**Key:** ||`{key_value}`||",
-                        inline=False
-                    )
-                
-                await interaction.followup.send(embed=embed, ephemeral=True)
-                log.info(f"✅ Key redeemed: {key_value} by {interaction.user.id}")
-
-            except Exception as exc:
-                log.exception(f"Error redeeming key")
-                embed = create_embed("❌ Error", "Failed to redeem key. Try again.", discord.Color.red())
-                await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name="panel", description="Access your Banana Hub dashboard")
     async def panel(self, interaction: discord.Interaction):

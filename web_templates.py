@@ -1096,6 +1096,201 @@ LANDING_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
 </footer>
 """)
 
+                <ul style="list-style: none; margin-bottom: 2rem;">
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Basic script library</span>
+                    </li>
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Limited executions</span>
+                    </li>
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Community support</span>
+                    </li>
+                </ul>
+                
+                <a href="/login" class="btn btn-secondary" style="width: 100%;">Start Free Trial</a>
+            </div>
+            
+            <!-- Premium Plan -->
+            <div class="card fade-in" style="animation-delay: 0.1s; border-color: var(--primary); transform: scale(1.05);">
+                <div class="badge badge-primary" style="position: absolute; top: 1rem; right: 1rem;">Popular</div>
+                
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Premium</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <span style="font-size: 3rem; font-weight: 800; color: var(--primary);">$9.99</span>
+                        <span style="color: var(--text-muted);">/month</span>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.875rem;">Best value for serious users</p>
+                </div>
+                
+                <ul style="list-style: none; margin-bottom: 2rem;">
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Full script library</span>
+                    </li>
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Unlimited executions</span>
+                    </li>
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Priority support</span>
+                    </li>
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Auto-updates</span>
+                    </li>
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Custom scripts</span>
+                    </li>
+                </ul>
+                
+                <a href="/login" class="btn btn-primary" style="width: 100%;">Get Premium</a>
+            </div>
+            
+            <!-- Lifetime Plan -->
+            <div class="card fade-in" style="animation-delay: 0.2s;">
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Lifetime</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <span style="font-size: 3rem; font-weight: 800; color: var(--primary);">$49.99</span>
+                        <span style="color: var(--text-muted);">/forever</span>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.875rem;">One-time payment, lifetime access</p>
+                </div>
+                
+                <ul style="list-style: none; margin-bottom: 2rem;">
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Everything in Premium</span>
+                    </li>
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>VIP Discord role</span>
+                    </li>
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Early access features</span>
+                    </li>
+                    <li style="padding: 0.75rem 0; display: flex; align-items: center; gap: 0.75rem;">
+                        <i class="fas fa-check" style="color: var(--success);"></i>
+                        <span>Lifetime updates</span>
+                    </li>
+                </ul>
+                
+                <a href="/login" class="btn btn-secondary" style="width: 100%;">Get Lifetime</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section id="faq" class="section-lg" style="background: var(--bg-darker);">
+    <div class="container">
+        <div class="text-center" style="margin-bottom: 4rem;">
+            <h2 class="fade-in" style="margin-bottom: 1rem;">Frequently Asked Questions</h2>
+            <p class="fade-in" style="font-size: 1.125rem; max-width: 600px; margin: 0 auto;">
+                Got questions? We've got answers.
+            </p>
+        </div>
+        
+        <div style="max-width: 800px; margin: 0 auto;">
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 1rem;">Is Banana Hub safe to use?</h4>
+                <p style="color: var(--text-muted);">Yes! We use military-grade encryption and HWID protection. Our scripts are regularly tested and updated to ensure maximum safety.</p>
+            </div>
+            
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 1rem;">What executors are supported?</h4>
+                <p style="color: var(--text-muted);">Banana Hub works with all major executors including Synapse X, KRNL, Fluxus, and many more.</p>
+            </div>
+            
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 1rem;">Can I get a refund?</h4>
+                <p style="color: var(--text-muted);">We offer a 7-day money-back guarantee. If you're not satisfied, contact our support team for a full refund.</p>
+            </div>
+            
+            <div class="card">
+                <h4 style="margin-bottom: 1rem;">How do I get support?</h4>
+                <p style="color: var(--text-muted);">Join our Discord server for 24/7 support from our team and community. Premium users get priority assistance.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="section-lg">
+    <div class="container">
+        <div class="card text-center" style="background: linear-gradient(135deg, rgba(250, 204, 21, 0.1), rgba(245, 158, 11, 0.05)); border-color: var(--primary); padding: 4rem 2rem;">
+            <h2 style="margin-bottom: 1.5rem;">Ready to Get Started?</h2>
+            <p style="font-size: 1.125rem; margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                Join thousands of users already using Banana Hub. Start your free trial today!
+            </p>
+            <div class="flex-center gap-lg" style="flex-wrap: wrap;">
+                <a href="/login" class="btn btn-primary btn-lg">
+                    <i class="fas fa-rocket"></i>
+                    <span>Start Free Trial</span>
+                </a>
+                <a href="https://discord.gg/bananahub" target="_blank" class="btn btn-outline btn-lg">
+                    <i class="fab fa-discord"></i>
+                    <span>Join Discord</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer style="background: var(--bg-darker); padding: 3rem 0; border-top: 1px solid var(--border);">
+    <div class="container">
+        <div class="grid grid-4" style="margin-bottom: 3rem;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                    <span style="font-size: 2rem;">🍌</span>
+                    <span style="font-size: 1.25rem; font-weight: 800; color: var(--primary);">Banana Hub</span>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.875rem;">The ultimate Roblox script hub for power users.</p>
+            </div>
+            
+            <div>
+                <h4 style="margin-bottom: 1rem; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Product</h4>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <a href="#features" style="color: var(--text-secondary); font-size: 0.875rem;">Features</a>
+                    <a href="#pricing" style="color: var(--text-secondary); font-size: 0.875rem;">Pricing</a>
+                    <a href="/login" style="color: var(--text-secondary); font-size: 0.875rem;">Login</a>
+                </div>
+            </div>
+            
+            <div>
+                <h4 style="margin-bottom: 1rem; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Support</h4>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <a href="#faq" style="color: var(--text-secondary); font-size: 0.875rem;">FAQ</a>
+                    <a href="https://discord.gg/bananahub" style="color: var(--text-secondary); font-size: 0.875rem;">Discord</a>
+                    <a href="#" style="color: var(--text-secondary); font-size: 0.875rem;">Contact</a>
+                </div>
+            </div>
+            
+            <div>
+                <h4 style="margin-bottom: 1rem; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Legal</h4>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <a href="#" style="color: var(--text-secondary); font-size: 0.875rem;">Terms of Service</a>
+                    <a href="#" style="color: var(--text-secondary); font-size: 0.875rem;">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+        
+        <div style="padding-top: 2rem; border-top: 1px solid var(--border); text-align: center; color: var(--text-muted); font-size: 0.875rem;">
+            &copy; 2025 Banana Hub Enterprise. All rights reserved.
+        </div>
+    </div>
+</footer>
+""")
+
 # ==============================================================================
 # 🔐 LOGIN PAGE
 # ==============================================================================
@@ -1117,11 +1312,41 @@ LOGIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                 <p style="color: var(--text-muted);">Sign in to your Banana Hub account</p>
             </div>
             
-            <!-- Login Form -->
-            <form id="loginForm" onsubmit="handleLogin(event)">
+            <!-- Auth Method Tabs -->
+            <div style="display: flex; margin-bottom: 1.5rem; gap: 0.5rem;">
+                <button type="button" id="tab-username" class="btn btn-primary" style="flex: 1;" onclick="switchAuthTab('username')">
+                    <i class="fas fa-user"></i>
+                    <span>Username</span>
+                </button>
+                <button type="button" id="tab-legacy" class="btn btn-secondary" style="flex: 1;" onclick="switchAuthTab('legacy')">
+                    <i class="fas fa-key"></i>
+                    <span>Legacy Key</span>
+                </button>
+            </div>
+            
+            <!-- Username/Password Form (NEW - Default) -->
+            <form id="usernameForm" onsubmit="handleUsernameLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="username" name="username" class="form-input" placeholder="Enter your username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Sign In</span>
+                </button>
+            </form>
+            
+            <!-- Legacy Form (Discord ID + Key) -->
+            <form id="legacyForm" style="display: none;" onsubmit="handleLegacyLogin(event)">
                 <div class="form-group">
                     <label class="form-label">Discord ID</label>
-                    <input type="text" id="user_id" name="user_id" class="form-input" placeholder="Enter your Discord ID" required>
+                    <input type="text" id="user_id" name="user_id" class="form-input" placeholder="Enter your Discord ID">
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
                         <i class="fas fa-info-circle"></i> Your Discord user ID (numbers only)
                     </p>
@@ -1129,7 +1354,7 @@ LOGIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                 
                 <div class="form-group">
                     <label class="form-label">License Key</label>
-                    <input type="password" id="key" name="key" class="form-input" placeholder="BANANA-XXX-XXX-XXX" required>
+                    <input type="password" id="key" name="key" class="form-input" placeholder="BANANA-XXX-XXX-XXX">
                     <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
                         <i class="fas fa-key"></i> Your Banana Hub license key
                     </p>
@@ -1152,8 +1377,11 @@ LOGIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
                 </div>
             </div>
             
-            <!-- Sign Up Link -->
+            <!-- Sign Up Info -->
             <div style="text-align: center;">
+                <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                    Use <code>/redeem</code> in Discord to create your account
+                </p>
                 <a href="/#pricing" style="color: var(--primary); font-weight: 600;">
                     Get Your License Key
                     <i class="fas fa-arrow-right" style="margin-left: 0.5rem;"></i>
@@ -1164,6 +1392,25 @@ LOGIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
 </div>
 
 <script>
+    function switchAuthTab(tab) {
+        const usernameForm = document.getElementById('usernameForm');
+        const legacyForm = document.getElementById('legacyForm');
+        const tabUsername = document.getElementById('tab-username');
+        const tabLegacy = document.getElementById('tab-legacy');
+        
+        if (tab === 'username') {
+            usernameForm.style.display = 'block';
+            legacyForm.style.display = 'none';
+            tabUsername.className = 'btn btn-primary';
+            tabLegacy.className = 'btn btn-secondary';
+        } else {
+            usernameForm.style.display = 'none';
+            legacyForm.style.display = 'block';
+            tabUsername.className = 'btn btn-secondary';
+            tabLegacy.className = 'btn btn-primary';
+        }
+    }
+
     function showStatus(message, type) {
         const statusDiv = document.getElementById('statusMessage');
         const badgeClass = type === 'success' ? 'badge-success' : type === 'error' ? 'badge-error' : 'badge-warning';
@@ -1173,14 +1420,45 @@ LOGIN_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
         statusDiv.style.display = 'block';
     }
     
-    async function handleLogin(e) {
+    async function handleUsernameLogin(e) {
         e.preventDefault();
         showStatus('Authenticating...', 'info');
         
-        const formData = new FormData(e.target);
         const data = {
-            user_id: formData.get('user_id').trim(),
-            key: formData.get('key').trim()
+            username: document.getElementById('username').value.trim(),
+            password: document.getElementById('password').value
+        };
+        
+        try {
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success || response.ok) {
+                showStatus('Login successful! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = result.redirect || '/dashboard';
+                }, 1000);
+            } else {
+                showStatus(result.error || 'Invalid credentials. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showStatus('Connection error. Please check your internet and try again.', 'error');
+        }
+    }
+    
+    async function handleLegacyLogin(e) {
+        e.preventDefault();
+        showStatus('Authenticating...', 'info');
+        
+        const data = {
+            user_id: document.getElementById('user_id').value.trim(),
+            key: document.getElementById('key').value.trim()
         };
         
         try {
@@ -1254,7 +1532,13 @@ async function startTrial() {
         });
         const data = await res.json();
         if (data.success) {
-            window.location.href = `/trial/dashboard?key=${encodeURIComponent(data.key)}`;
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            } else if (data.step1_url) {
+                window.location.href = data.step1_url;
+            } else {
+                msg.textContent = "Unexpected response. Try again.";
+            }
         } else {
             msg.textContent = data.error || "Failed to start trial.";
         }

@@ -12,9 +12,18 @@ import shutil
 import sqlite3
 import random
 import string
+import uuid
+import secrets
+import hashlib
 from datetime import datetime, UTC, timedelta
 from pathlib import Path
 from typing import Dict, Optional, List, Any
+
+try:
+    import bcrypt
+    BCRYPT_AVAILABLE = True
+except ImportError:
+    BCRYPT_AVAILABLE = False
 
 from config import Config
 
@@ -112,12 +121,48 @@ class Database:
             expires_at TEXT,
             ip_address TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS trial_sessions (
+            token TEXT PRIMARY KEY,
+            discord_id TEXT,
+            created_at TEXT,
+            expires_at TEXT,
+            step1_done INTEGER DEFAULT 0,
+            step2_done INTEGER DEFAULT 0,
+            ip_address TEXT
+        );
+
+        -- New accounts table for username/password authentication
+        CREATE TABLE IF NOT EXISTS accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            discord_id TEXT UNIQUE NOT NULL,
+            email TEXT NOT NULL,
+            email_verified INTEGER DEFAULT 0,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (discord_id) REFERENCES users(discord_id)
+        );
+
+        -- Email verification codes
+        CREATE TABLE IF NOT EXISTS email_codes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            discord_id TEXT NOT NULL,
+            email TEXT NOT NULL,
+            code TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            expires_at TEXT NOT NULL
+        );
         
         CREATE INDEX IF NOT EXISTS idx_users_key ON users(key);
         CREATE INDEX IF NOT EXISTS idx_keys_used ON keys(used);
         CREATE INDEX IF NOT EXISTS idx_analytics_discord ON analytics(discord_id);
         CREATE INDEX IF NOT EXISTS idx_analytics_event ON analytics(event_type);
         CREATE INDEX IF NOT EXISTS idx_trials_discord ON trials(discord_id);
+        CREATE INDEX IF NOT EXISTS idx_trial_sessions_discord ON trial_sessions(discord_id);
+        CREATE INDEX IF NOT EXISTS idx_accounts_username ON accounts(username);
+        CREATE INDEX IF NOT EXISTS idx_accounts_discord ON accounts(discord_id);
+        CREATE INDEX IF NOT EXISTS idx_email_codes_discord ON email_codes(discord_id);
         """
         
         conn = None
@@ -432,6 +477,106 @@ class Database:
             if conn:
                 conn.close()
 
+    # =======================================================================
+    # 🧭 TRIAL SESSION FLOW (LINKVERTISE STEPS)
+    # =======================================================================
+
+    def create_trial_session(self, discord_id: int | str, ip_address: Optional[str] = None, hours: int = 2) -> Optional[Dict[str, Any]]:
+        discord_id_str = str(discord_id)
+        now = datetime.now(UTC)
+        expires = now + timedelta(hours=hours)
+        token = str(uuid.uuid4())
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO trial_sessions (token, discord_id, created_at, expires_at, step1_done, step2_done, ip_address)
+                VALUES (?, ?, ?, ?, 0, 0, ?)
+                """,
+                (token, discord_id_str, now.isoformat(), expires.isoformat(), ip_address)
+            )
+            conn.commit()
+            return {
+                "token": token,
+                "discord_id": discord_id_str,
+                "created_at": now.isoformat(),
+                "expires_at": expires.isoformat(),
+                "step1_done": 0,
+                "step2_done": 0,
+                "ip_address": ip_address
+            }
+        except Exception as e:
+            log.error(f"Error creating trial session: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    def get_trial_session(self, token: str) -> Optional[Dict[str, Any]]:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM trial_sessions WHERE token = ?", (token,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            session = dict(row)
+            expires_at = session.get("expires_at")
+            if expires_at and datetime.fromisoformat(expires_at) <= datetime.now(UTC):
+                return None
+            return session
+        except Exception as e:
+            log.error(f"Error getting trial session: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    def mark_trial_step1(self, token: str) -> bool:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute("UPDATE trial_sessions SET step1_done = 1 WHERE token = ?", (token,))
+            conn.commit()
+            return cur.rowcount > 0
+        except Exception as e:
+            log.error(f"Error marking step1: {e}")
+            return False
+        finally:
+            if conn:
+                conn.close()
+
+    def mark_trial_step2(self, token: str) -> bool:
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute("UPDATE trial_sessions SET step2_done = 1 WHERE token = ?", (token,))
+            conn.commit()
+            return cur.rowcount > 0
+        except Exception as e:
+            log.error(f"Error marking step2: {e}")
+            return False
+        finally:
+            if conn:
+                conn.close()
+
+    def delete_trial_session(self, token: str) -> None:
+        conn = None
+        try:
+            conn = self.get_connection()
+            conn.execute("DELETE FROM trial_sessions WHERE token = ?", (token,))
+            conn.commit()
+        except Exception as e:
+            log.error(f"Error deleting trial session: {e}")
+        finally:
+            if conn:
+                conn.close()
+
     # ==========================================================================
     # 🚫 BLACKLIST OPERATIONS
     # ==========================================================================
@@ -714,6 +859,199 @@ class Database:
                 'login_count': 0,
                 'reset_count': 0
             }
+        finally:
+            if conn:
+                conn.close()
+
+
+    # ==========================================================================
+    # 🔐 ACCOUNT OPERATIONS (Username/Password Auth)
+    # ==========================================================================
+
+    def hash_password(self, password: str) -> str:
+        """Hash a password using bcrypt or fallback."""
+        if BCRYPT_AVAILABLE:
+            return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        else:
+            # Fallback: SHA256 with salt (less secure, but works without bcrypt)
+            salt = secrets.token_hex(16)
+            hashed = hashlib.sha256((salt + password).encode()).hexdigest()
+            return f"{salt}${hashed}"
+
+    def verify_password(self, password: str, password_hash: str) -> bool:
+        """Verify a password against its hash."""
+        if BCRYPT_AVAILABLE:
+            try:
+                return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+            except Exception:
+                return False
+        else:
+            # Fallback verification
+            try:
+                salt, hashed = password_hash.split('$')
+                return hashlib.sha256((salt + password).encode()).hexdigest() == hashed
+            except Exception:
+                return False
+
+    def check_username_available(self, username: str) -> bool:
+        """Check if username is available."""
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM accounts WHERE LOWER(username) = LOWER(?)", (username,))
+            return cur.fetchone() is None
+        except Exception as e:
+            log.error(f"Error checking username: {e}")
+            return False
+        finally:
+            if conn:
+                conn.close()
+
+    def create_account(self, discord_id: int | str, email: str, username: str, password: str) -> bool:
+        """Create a new account with username/password."""
+        discord_id_str = str(discord_id)
+        password_hash = self.hash_password(password)
+        conn = None
+        
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO accounts (discord_id, email, email_verified, username, password_hash, created_at)
+                VALUES (?, ?, 1, ?, ?, ?)
+                """,
+                (discord_id_str, email, username, password_hash, datetime.now(UTC).isoformat())
+            )
+            conn.commit()
+            log.info(f"✅ Created account for user: {discord_id_str} with username: {username}")
+            return True
+        except sqlite3.IntegrityError as e:
+            log.warning(f"Account creation failed (duplicate): {e}")
+            return False
+        except Exception as e:
+            log.error(f"Error creating account: {e}")
+            return False
+        finally:
+            if conn:
+                conn.close()
+
+    def get_account_by_username(self, username: str) -> Optional[Dict[str, Any]]:
+        """Get account by username for login."""
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM accounts WHERE LOWER(username) = LOWER(?)", (username,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        except Exception as e:
+            log.error(f"Error getting account by username: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    def get_account_by_discord(self, discord_id: int | str) -> Optional[Dict[str, Any]]:
+        """Get account by Discord ID."""
+        discord_id_str = str(discord_id)
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM accounts WHERE discord_id = ?", (discord_id_str,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+        except Exception as e:
+            log.error(f"Error getting account by discord: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    # ==========================================================================
+    # 📧 EMAIL VERIFICATION OPERATIONS
+    # ==========================================================================
+
+    def store_email_code(self, discord_id: int | str, email: str, code: str, expires_minutes: int = 10) -> bool:
+        """Store an email verification code."""
+        discord_id_str = str(discord_id)
+        now = datetime.now(UTC)
+        expires_at = now + timedelta(minutes=expires_minutes)
+        conn = None
+        
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            # Delete any existing codes for this user
+            cur.execute("DELETE FROM email_codes WHERE discord_id = ?", (discord_id_str,))
+            # Insert new code
+            cur.execute(
+                """
+                INSERT INTO email_codes (discord_id, email, code, created_at, expires_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (discord_id_str, email, code, now.isoformat(), expires_at.isoformat())
+            )
+            conn.commit()
+            log.info(f"✅ Stored email code for: {discord_id_str}")
+            return True
+        except Exception as e:
+            log.error(f"Error storing email code: {e}")
+            return False
+        finally:
+            if conn:
+                conn.close()
+
+    def verify_email_code(self, discord_id: int | str, code: str) -> Optional[str]:
+        """Verify email code and return email if valid."""
+        discord_id_str = str(discord_id)
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT email, expires_at FROM email_codes WHERE discord_id = ? AND code = ?",
+                (discord_id_str, code)
+            )
+            row = cur.fetchone()
+            
+            if not row:
+                return None
+            
+            expires_at = datetime.fromisoformat(row['expires_at'])
+            if expires_at <= datetime.now(UTC):
+                # Code expired
+                cur.execute("DELETE FROM email_codes WHERE discord_id = ?", (discord_id_str,))
+                conn.commit()
+                return None
+            
+            # Valid code - delete it and return email
+            email = row['email']
+            cur.execute("DELETE FROM email_codes WHERE discord_id = ?", (discord_id_str,))
+            conn.commit()
+            return email
+        except Exception as e:
+            log.error(f"Error verifying email code: {e}")
+            return None
+        finally:
+            if conn:
+                conn.close()
+
+    def get_pending_email(self, discord_id: int | str) -> Optional[str]:
+        """Get pending email for a user's verification."""
+        discord_id_str = str(discord_id)
+        conn = None
+        try:
+            conn = self.get_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT email FROM email_codes WHERE discord_id = ?", (discord_id_str,))
+            row = cur.fetchone()
+            return row['email'] if row else None
+        except Exception as e:
+            log.error(f"Error getting pending email: {e}")
+            return None
         finally:
             if conn:
                 conn.close()

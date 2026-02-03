@@ -558,11 +558,61 @@ def api_trial_start():
 
         return jsonify({
             'success': True,
-            'step1_url': links.get("step1")
+            'step1_url': "/trial/checkpoint/1"
         })
     except Exception as e:
         log.error(f"Trial start error: {e}")
         return jsonify({'success': False, 'error': 'Trial start failed'}), 500
+
+
+@app.route('/trial/checkpoint/<int:step>')
+def trial_checkpoint(step):
+    """Render the checkpoint landing page."""
+    try:
+        token = session.get('trial_token')
+        discord_id = session.get('trial_discord_id')
+        
+        # If no session, redirect to trial start
+        if not token or not discord_id:
+            return redirect(url_for('trial_page'))
+            
+        session_data = db.get_trial_session(token)
+        if not session_data:
+             return redirect(url_for('trial_page'))
+
+        links = get_linkvertise_urls()
+        next_url = ""
+        percent = 0
+
+        # Validate step progression
+        if step == 1:
+            next_url = links.get("step1")
+            percent = 33
+        elif step == 2:
+            if not session_data.get('step1_done'):
+                return redirect("/trial/checkpoint/1")
+            next_url = links.get("step2")
+            percent = 66
+        elif step == 3:
+            if not session_data.get('step1_done'): return redirect("/trial/checkpoint/1")
+            if not session_data.get('step2_done'): return redirect("/trial/checkpoint/2")
+            next_url = links.get("step3")
+            percent = 99
+        else:
+            return "<h1>Invalid step</h1>", 404
+
+        if not next_url:
+            return "<h1>Error: Step URL not configured</h1>", 500
+
+        return render_template_string(
+            TEMPLATES['checkpoint'],
+            step=step,
+            percent=percent,
+            next_url=next_url
+        )
+    except Exception as e:
+        log.error(f"Checkpoint error: {e}")
+        return f"<h1>Error loading checkpoint: {str(e)}</h1>", 500
 
 
 @app.route('/trial/step1')
@@ -580,11 +630,7 @@ def trial_step1():
 
         db.mark_trial_step1(token)
 
-        links = get_linkvertise_urls()
-        if not links.get("step2"):
-            return "<h1>Linkvertise not configured.</h1>", 500
-
-        return redirect(links.get("step2"))
+        return redirect("/trial/checkpoint/2")
     except Exception as e:
         log.error(f"Trial step1 error: {e}")
         return "<h1>Trial step1 failed.</h1>", 500
@@ -608,11 +654,7 @@ def trial_step2():
 
         db.mark_trial_step2(token)
 
-        links = get_linkvertise_urls()
-        if not links.get("step3"):
-            return "<h1>Linkvertise step 3 not configured.</h1>", 500
-
-        return redirect(links.get("step3"))
+        return redirect("/trial/checkpoint/3")
     except Exception as e:
         log.error(f"Trial step2 error: {e}")
         return "<h1>Trial step2 failed.</h1>", 500

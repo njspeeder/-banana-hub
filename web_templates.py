@@ -3395,6 +3395,112 @@ document.addEventListener('DOMContentLoaded', function() {
 """)
 
 # ==============================================================================
+# 🎯 TRIAL CHECKPOINT PAGE
+# ==============================================================================
+
+TRIAL_CHECKPOINT_PAGE = BASE_HTML.replace('{BODY_CONTENT}', """
+<div class="flex-center flex-col" style="min-height: 100vh; padding: var(--spacing-md); position: relative; z-index: 1;">
+    
+    <h1 style="margin-bottom: 0.5rem; font-size: clamp(2rem, 5vw, 3rem); text-align: center; font-weight: 800;">Banana Hub Key System</h1>
+    <p style="color: var(--text-secondary); margin-bottom: 3rem; text-align: center; font-size: 1.1rem;">Complete all checkpoints to receive your key.</p>
+
+    <!-- Progress Steps -->
+    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 600px; margin-bottom: 2rem; position: relative; padding: 0 1rem;">
+        <!-- Line background -->
+        <div style="position: absolute; top: 14px; left: 1rem; right: 1rem; height: 6px; background: var(--border); z-index: 0; border-radius: 3px;"></div>
+        <!-- Active Line -->
+        <div style="position: absolute; top: 14px; left: 1rem; width: calc({{ (step - 1) / 2 * 100 }}% - 2rem); max-width: calc(100% - 2rem); height: 6px; background: #3B82F6; z-index: 0; border-radius: 3px; transition: width 0.3s ease;"></div>
+        
+        <!-- Step 1 -->
+        <div class="flex-col flex-center" style="z-index: 1; position: relative; gap: 0.5rem;">
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: {{ '#3B82F6' if step >= 1 else '#4B5563' }}; margin-bottom: 0;"></div>
+            {% if step == 1 %}
+            <div style="background: white; color: black; padding: 0.25rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.875rem;">Step 1</div>
+            {% else %}
+            <span style="font-size: 0.875rem; color: #9CA3AF; font-weight: 600; padding: 0.25rem 0.75rem;">Step 1</span>
+            {% endif %}
+        </div>
+        
+        <!-- Step 2 -->
+        <div class="flex-col flex-center" style="z-index: 1; position: relative; gap: 0.5rem;">
+             <div style="width: 24px; height: 24px; border-radius: 50%; background: {{ '#3B82F6' if step >= 2 else '#4B5563' }}; margin-bottom: 0;"></div>
+            {% if step == 2 %}
+            <div style="background: white; color: black; padding: 0.25rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.875rem;">Step 2</div>
+            {% else %}
+            <span style="font-size: 0.875rem; color: #9CA3AF; font-weight: 600; padding: 0.25rem 0.75rem;">Step 2</span>
+            {% endif %}
+        </div>
+        
+        <!-- Step 3 -->
+        <div class="flex-col flex-center" style="z-index: 1; position: relative; gap: 0.5rem;">
+             <div style="width: 24px; height: 24px; border-radius: 50%; background: {{ '#3B82F6' if step >= 3 else '#4B5563' }}; margin-bottom: 0;"></div>
+            {% if step == 3 %}
+            <div style="background: white; color: black; padding: 0.25rem 0.75rem; border-radius: 999px; font-weight: 700; font-size: 0.875rem;">Step 3</div>
+            {% else %}
+            <span style="font-size: 0.875rem; color: #9CA3AF; font-weight: 600; padding: 0.25rem 0.75rem;">Step 3</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card fade-in" style="max-width: 500px; width: 100%; border-radius: var(--radius-xl); padding: 2rem; border: 1px solid var(--border); background: #050810;">
+        
+        <div style="margin-bottom: 1.5rem;">
+            <div class="flex" style="gap: 0.75rem; align-items: center; margin-bottom: 0.5rem;">
+                <i class="fas fa-lock" style="font-size: 1.25rem;"></i>
+                <h2 style="font-size: 1.25rem; font-weight: 700;">
+                    {% if step == 1 %}First Checkpoint
+                    {% elif step == 2 %}Second Checkpoint
+                    {% else %}Final Checkpoint{% endif %}
+                </h2>
+            </div>
+            
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <p style="color: var(--text-secondary); font-size: 0.95rem; margin: 0;">
+                    This key system is for the <strong style="color: var(--text-primary);">Banana Hub</strong>.
+                </p>
+            </div>
+             <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.25rem; margin-bottom: 0;">
+                Complete the first link to continue. <span class="badge" style="background: var(--bg-darker); border: 1px solid var(--border); padding: 0.1rem 0.5rem; margin-left: 0.5rem; font-size: 0.8rem; vertical-align: middle;">{{ step }}/3</span>
+            </p>
+        </div>
+        
+        <!-- Info Box -->
+        <div style="background: #022c22; border: 1px solid #064e3b; border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+            <i class="fas fa-shield-alt" style="color: #10B981;"></i>
+            <span style="color: #6EE7B7; font-size: 0.9rem; font-weight: 500;">This key system is for the executor.</span>
+        </div>
+        
+        <!-- Current Step Box -->
+        <div style="background: #111827; border: 1px solid #1F2937; border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 2rem;">
+            <div style="font-weight: 700; margin-bottom: 0.5rem; font-size: 1rem; color: var(--text-primary);">Current Step:</div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; color: var(--text-secondary); font-size: 0.9rem;">
+                <i class="fas fa-external-link-alt"></i>
+                <span>Complete the link checkpoint ({{ step }}/3)</span>
+            </div>
+        </div>
+        
+        <!-- Main Button -->
+        <a href="{{ next_url }}" class="btn" style="width: 100%; background: white; color: black; font-weight: 700; margin-bottom: 1rem; height: 3rem; font-size: 1rem; border-radius: var(--radius-md); transition: transform 0.2s, box-shadow 0.2s;">
+            <i class="fas fa-external-link-alt"></i>
+            <span>Complete Checkpoint {{ step }}</span>
+        </a>
+        
+        <!-- Lifetime Key Button -->
+        <a href="#" class="btn" style="width: 100%; background: #450a0a; color: #f87171; border: 1px solid #7f1d1d; font-weight: 700; height: 3rem; border-radius: var(--radius-md);">
+            <i class="fas fa-lock"></i>
+            <span>GET LIFETIME KEY &nbsp; →</span>
+        </a>
+        
+        <div style="text-align: center; margin-top: 1rem; font-size: 0.75rem; color: #6B7280;">
+            One-time payment • Unlimited access
+        </div>
+
+    </div>
+</div>
+""")
+
+# ==============================================================================
 # 📦 COMPLETE TEMPLATES DICTIONARY
 # ==============================================================================
 
@@ -3404,7 +3510,8 @@ TEMPLATES = {
     'dashboard': DASHBOARD_PAGE,
     'admin': ADMIN_PAGE,
     'trial': TRIAL_PAGE,
-    'trial_dashboard': TRIAL_DASHBOARD_PAGE
+    'trial_dashboard': TRIAL_DASHBOARD_PAGE,
+    'checkpoint': TRIAL_CHECKPOINT_PAGE
 }
 
 # Export all templates

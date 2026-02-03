@@ -70,17 +70,24 @@ async def send_verification_email(email: str, code: str) -> bool:
     smtp_host = getattr(Config, 'SMTP_HOST', '')
     smtp_port = getattr(Config, 'SMTP_PORT', 587)
     smtp_user = getattr(Config, 'SMTP_USER', '')
-    smtp_pass = getattr(Config, 'SMTP_PASSWORD', '')
+    # Handle spaces in app passwords (common copy-paste issue)
+    smtp_pass = getattr(Config, 'SMTP_PASSWORD', '').replace(' ', '')
     smtp_from = getattr(Config, 'SMTP_FROM', 'noreply@bananahub.com')
     
     # In DEV mode without SMTP, log code and return success
-    if DEV_MODE and not smtp_user:
+    if DEV_MODE and not smtp_pass:
         log.info(f"📧 [DEV] Email verification code for {email}: {code}")
         return True
     
-    if not smtp_user or not smtp_pass:
-        log.warning("📧 SMTP not configured, skipping email send")
+    if not smtp_pass:
+        log.warning("📧 SMTP password not configured, skipping email send")
         return False
+
+    # Ensure we have a user, default to from address if user is missing
+    if not smtp_user:
+        # Extract email if format is "Name <email@domain.com>"
+        match = re.search(r'<(.+?)>', smtp_from)
+        smtp_user = match.group(1) if match else smtp_from
     
     try:
         msg = MIMEMultipart('alternative')
@@ -110,18 +117,24 @@ async def send_verification_email(email: str, code: str) -> bool:
         # Run SMTP in thread to not block
         def send_email():
             try:
+                # Extract pure email for envelope sender
+                envelope_from = smtp_from
+                match = re.search(r'<(.+?)>', smtp_from)
+                if match:
+                    envelope_from = match.group(1)
+
                 # 10 second timeout for SMTP
                 if smtp_port == 465:
                     # Use SSL for port 465
                     with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10) as server:
                         server.login(smtp_user, smtp_pass)
-                        server.sendmail(smtp_from, email, msg.as_string())
+                        server.sendmail(envelope_from, email, msg.as_string())
                 else:
                     # Use STARTTLS for port 587
                     with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
                         server.starttls()
                         server.login(smtp_user, smtp_pass)
-                        server.sendmail(smtp_from, email, msg.as_string())
+                        server.sendmail(envelope_from, email, msg.as_string())
 
                 log.info(f"📧 Verification email sent to: {email}")
                 return True

@@ -1253,7 +1253,6 @@ def api_check_key():
 
 
 @app.route('/api/auth', methods=['POST'])
-@require_admin
 def api_authenticate_user():
     """Authenticate user logic for API clients."""
     try:
@@ -1301,14 +1300,17 @@ def api_authenticate_user():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/verify', methods=['POST'])
-@require_admin
+@app.route('/api/verify', methods=['GET', 'POST'])
 def api_verify_license():
     """Quick license verification."""
     try:
-        data = request.get_json() or {}
-        user_id = data.get('user_id', '')
-        key = data.get('key', '').strip().upper()
+        if request.method == 'GET':
+            user_id = request.args.get('user_id', '')
+            key = request.args.get('key', '').strip().upper()
+        else:
+            data = request.get_json() or {}
+            user_id = data.get('user_id', '')
+            key = data.get('key', '').strip().upper()
         
         user = db.get_user(user_id)
         if user and user.get('key') == key:
@@ -1417,6 +1419,23 @@ print("💡 Press INSERT to open GUI (coming soon)")
 # ==============================================================================
 # 🚀 ERROR HANDLERS
 # ==============================================================================
+
+@app.route('/script.lua')
+def serve_script():
+    """Serve the Lua script with dynamic API URL."""
+    try:
+        with open('script.lua', 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+        # Replace placeholder with actual URL
+        website_url = getattr(Config, 'WEBSITE_URL', 'https://banana-hub.onrender.com')
+        content = content.replace('[[API_URL]]', website_url)
+        
+        return content, 200, {'Content-Type': 'text/plain'}
+    except Exception as e:
+        log.error(f"Error serving script: {e}")
+        return "-- Error loading script", 500
+
 
 @app.errorhandler(404)
 def not_found(error):

@@ -618,13 +618,14 @@ class BananaBot(commands.Bot):
                     await message.channel.send(embed=embed)
                     return
                 
-                # Key is valid! Move to step 2
+                # Key is valid! Move to step 4 (Skip email)
                 session['key'] = key_value
-                session['step'] = 2
+                session['step'] = 4
+                session['verified_email'] = f"{user_id}@no-email.local"
                 
                 embed = create_embed(
                     "✅ Key Verified!",
-                    f"Key `{key_value}` is valid!\n\n**📧 Step 2/5: Email Address**\n\nPlease send your email address.\nWe'll send a verification code to confirm it's yours.",
+                    f"Key `{key_value}` is valid!\n\n**👤 Step 2/3: Choose Username**\n\nPick a username for your account.\n\n*3-20 characters, letters, numbers, and underscores only.*",
                     discord.Color.green()
                 )
                 await message.channel.send(embed=embed)
@@ -740,7 +741,7 @@ class BananaBot(commands.Bot):
                 
                 embed = create_embed(
                     "✅ Username Available!",
-                    f"Username `{username}` is yours!\n\n**🔒 Step 5/5: Set Password**\n\nChoose a secure password.\n\n*Minimum 6 characters.*",
+                    f"Username `{username}` is yours!\n\n**🔒 Step 3/3: Set Password**\n\nChoose a secure password.\n\n*Minimum 6 characters.*",
                     discord.Color.green()
                 )
                 await message.channel.send(embed=embed)
@@ -893,7 +894,11 @@ class UserCog(commands.Cog, name="User"):
     @app_commands.command(name="redeem", description="Redeem your Banana Hub license key (starts DM flow)")
     async def redeem(self, interaction: discord.Interaction):
         """Start the 5-step redemption process via DM."""
-        await interaction.response.defer(ephemeral=True)
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
+        except:
+            pass
         
         user_id = interaction.user.id
         
@@ -917,12 +922,12 @@ class UserCog(commands.Cog, name="User"):
                 "You have a key but need to set up your account with username/password.\n\n**Check your DMs to continue!**",
                 discord.Color.blue()
             )
-            # Start them at step 2 (email) since they already have a key
+            # Start them at step 4 (username) since they already have a key
             redemption_sessions[user_id] = {
-                'step': 2,
+                'step': 4,
                 'key': existing_user['key'],
                 'email': None,
-                'verified_email': None,
+                'verified_email': f"{user_id}@no-email.local",
                 'username': None,
                 'started_at': time.time()
             }
@@ -930,7 +935,7 @@ class UserCog(commands.Cog, name="User"):
             # New user - start from step 1
             embed = create_embed(
                 "🍌 Key Redemption",
-                "Let's set up your Banana Hub account!\n\n**Check your DMs to continue!**\n\nI'll walk you through a quick 5-step process.",
+                "Let's set up your Banana Hub account!\n\n**Check your DMs to continue!**\n\nI'll walk you through a quick 3-step process.",
                 discord.Color.gold()
             )
             redemption_sessions[user_id] = {
@@ -951,15 +956,22 @@ class UserCog(commands.Cog, name="User"):
             session = redemption_sessions[user_id]
             if session['step'] == 1:
                 dm_embed = create_embed(
-                    "🔑 Step 1/5: License Key",
+                    "🔑 Step 1/3: License Key",
                     "Welcome! Let's get you set up.\n\n**Please send your license key now.**\n\nFormat: `BANANA-XXX-XXX-XXX`",
                     discord.Color.gold()
                 )
-            else:
+            elif session['step'] == 4:
                 dm_embed = create_embed(
-                    "� Step 2/5: Email Address",
-                    f"Your key: `{session['key']}`\n\n**Please send your email address.**\n\nWe'll send a verification code to confirm it's yours.",
+                    "👤 Step 2/3: Choose Username",
+                    f"Your key: `{session['key']}`\n\n**Please send your desired username.**\n\n*3-20 characters, letters, numbers, and underscores only.*",
                     discord.Color.gold()
+                )
+            else:
+                # Fallback for unexpected state
+                dm_embed = create_embed(
+                    "❓ Continue Setup",
+                     "Please continue your setup.",
+                     discord.Color.blue()
                 )
             
             dm_embed.set_footer(text="Type 'cancel' to stop the process.")
@@ -1460,14 +1472,26 @@ class AdminCog(commands.Cog, name="Admin"):
     @app_commands.describe(amount="Number of keys (1-25)")
     async def genkey(self, interaction: discord.Interaction, amount: int = 1):
         if not await is_admin(interaction, self.bot):
-            await interaction.response.send_message("❌ Admin only!", ephemeral=True)
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message("❌ Admin only!", ephemeral=True)
+            except:
+                pass
             return
 
         if amount < 1 or amount > 25:
-            await interaction.response.send_message("❌ Amount must be 1-25!", ephemeral=True)
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message("❌ Amount must be 1-25!", ephemeral=True)
+            except:
+                pass
             return
 
-        await interaction.response.defer(ephemeral=True)
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
+        except:
+            pass
         
         result = await bot_api.generate_keys(amount)
         
